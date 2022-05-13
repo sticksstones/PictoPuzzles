@@ -1,8 +1,18 @@
 import 'game'
+import 'main_menu'
 
-game = Game()
-game:baseInit()
+local initialized = false
+local menu = nil 
+
+local function initialize() 
+   menu = MainMenu()   
+   initialized = true
+end
 
 function playdate.update()
-   game:update()
+   if not initialized then 
+      initialize()
+   end 
+   
+   menu:update()
 end

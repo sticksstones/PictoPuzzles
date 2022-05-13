@@ -6,6 +6,7 @@ local gfx = playdate.graphics
 class('Game').extends()
 
 gfx.setColor(gfx.kColorBlack)
+
 lastDirPressed = 0
 dirPressTimestamp = -1.0
 dirPressRepeatTimestamp = -1.0
@@ -20,45 +21,46 @@ offsetY = 72
 
 setVal = 0
 
-rowData = {}
-colData = {}
-matrix = {} 
+rowData = nil
+colData = nil
+matrix = nil
 
-files = {}
+files = nil
 
 function Game:init()
 	Game.super.init(self)
+	-- load font
+	   local gridFont = gfx.font.new('assets/Picross-Small')
+	   gridFont:setTracking(0)
+	   gridFont:setLeading(4)
+	   gfx.setFont(gridFont)
+	   
+	   -- load puzzle
+	   self:loadPuzzles()
 end
-
-function Game:baseInit() 
-   -- load font
-   local gridFont = gfx.font.new('assets/Picross-Small')
-   gridFont:setTracking(0)
-   gridFont:setLeading(4)
-   gfx.setFont(gridFont)
-   
-   -- load puzzle
-   self:loadPuzzles()
-   math.randomseed(playdate.getSecondsSinceEpoch())
-   fileIndex = math.random(1,#files)
-   self:loadPuzzle(fileIndex)   
-
-end 
 
 function Game:loadPuzzles()
    files = playdate.file.listFiles('assets/puzzles/')
 end
 
+function Game:loadRandomPuzzle() 
+	math.randomseed(playdate.getSecondsSinceEpoch())
+	fileIndex = math.random(1,#files)
+	self:loadPuzzle(fileIndex)   
+end
+
 function Game:loadPuzzle(fileIndex)
    img = gfx.image.new('assets/puzzles/'..files[fileIndex])  
 	
+   rowData = table.create(img.height,0)
+   matrix = table.create(img.height,0)
    -- get row data
    for y= 0, img.height-1
    do
 	   rowIndex = y+1
 	   rowCount = 0
-	   rowData[rowIndex] = {}
-	   matrix[y] = {} 
+	   rowData[rowIndex] = table.create(img.width,0)
+	   matrix[y] = table.create(img.width,0)
 	   for x= 0, img.width-1
 	   do
 		   matrix[y][x] = 0
@@ -84,12 +86,14 @@ function Game:loadPuzzle(fileIndex)
 	   end 
    end
    
+   colData = table.create(img.width,0)
+
    -- get column data
    for x= 0, img.width-1
    do
 	   colIndex = x+1
 	   colCount = 0
-	   colData[colIndex] = {}
+	   colData[colIndex] = table.create(img.height,0)
 	   for y= 0, img.height-1
 	   do
 		   sample = img:sample(x,y)
