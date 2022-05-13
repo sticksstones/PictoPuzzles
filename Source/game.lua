@@ -1,5 +1,6 @@
 import "CoreLibs/graphics"
 import "CoreLibs/object"
+import 'puzzle'
 
 local gfx = playdate.graphics
 
@@ -7,25 +8,24 @@ class('Game').extends()
 
 gfx.setColor(gfx.kColorBlack)
 
-lastDirPressed = 0
-dirPressTimestamp = -1.0
-dirPressRepeatTimestamp = -1.0
-dirPressRepeatTime = 100
-dirPressTimeTillRepeat = 350
+local lastDirPressed = 0
+local dirPressTimestamp = -1.0
+local dirPressRepeatTimestamp = -1.0
+local dirPressRepeatTime = 100
+local dirPressTimeTillRepeat = 350
 
-cursorLocX = 0
-cursorLocY = 0
-spacing = 16
-offsetX = 128
-offsetY = 72
+local cursorLocX = 0
+local cursorLocY = 0
+local spacing = 16
+local offsetX = 128
+local offsetY = 72
 
-setVal = 0
+local setVal = 0
 
-rowData = nil
-colData = nil
-matrix = nil
+local puzzle = nil
+local matrix = nil
 
-files = nil
+local files = nil
 
 function Game:init()
 	Game.super.init(self)
@@ -46,86 +46,23 @@ end
 function Game:loadRandomPuzzle() 
 	math.randomseed(playdate.getSecondsSinceEpoch())
 	fileIndex = math.random(1,#files)
-	self:loadPuzzle(fileIndex)   
-end
-
-function Game:loadPuzzle(fileIndex)
-   img = gfx.image.new('assets/puzzles/'..files[fileIndex])  
+	puzzle = Puzzle(fileIndex)
 	
-   rowData = table.create(img.height,0)
-   matrix = table.create(img.height,0)
-   -- get row data
-   for y= 0, img.height-1
-   do
-	   rowIndex = y+1
-	   rowCount = 0
-	   rowData[rowIndex] = table.create(img.width,0)
-	   matrix[y] = table.create(img.width,0)
-	   for x= 0, img.width-1
-	   do
-		   matrix[y][x] = 0
-		   sample = img:sample(x,y)
-		   
-		   if sample == gfx.kColorBlack then
-			   rowCount+= 1  
-		   else
-			   if rowCount > 0 then 
-				   table.insert(rowData[rowIndex],rowCount)
-				   rowCount = 0    
-			   end 
-		   end
-	   end
-   
-	   if rowCount > 0 then 
-		   table.insert(rowData[rowIndex],rowCount)
-		   rowCount = 0    
-	   end 
-	   
-	   if #rowData[rowIndex] == 0 then 
-		   table.insert(rowData[rowIndex],0)
-	   end 
-   end
-   
-   colData = table.create(img.width,0)
-
-   -- get column data
-   for x= 0, img.width-1
-   do
-	   colIndex = x+1
-	   colCount = 0
-	   colData[colIndex] = table.create(img.height,0)
-	   for y= 0, img.height-1
-	   do
-		   sample = img:sample(x,y)
-		   
-		   if sample == gfx.kColorBlack then
-			   colCount+= 1  
-		   else
-			   if colCount > 0 then 
-				   table.insert(colData[colIndex],colCount)
-				   colCount = 0    
-			   end 
-		   end
-	   end
-   
-	   if colCount > 0 then 
-		   table.insert(colData[colIndex],colCount)
-		   colCount = 0    
-	   end 
-	   
-	   
-	   if #colData[colIndex] == 0 then 
-		   table.insert(colData[colIndex],0)
-	   end 
-   end
+	matrix = table.create(#puzzle.colData, 0)
+	for y = 0, #puzzle.colData do 
+		matrix[y] = table.create(#puzzle.rowData, 0)
+		for x = 0, #puzzle.rowData do 
+			matrix[y][x] = 0
+		end
+	end 
 end
 
 function Game:drawGrid() 
-	gfx.drawLine(offsetX, offsetY, offsetX + #colData * spacing, offsetY)
+	gfx.drawLine(offsetX, offsetY, offsetX + #puzzle.colData * spacing, offsetY)
 	-- draw row data
-	rowNum = 0
-	for key,value in pairs(rowData) do
-		drawStr = ""
+	local rowNum = 0
+	for key,value in pairs(puzzle.rowData) do
+		local drawStr = ""
 		for key2,value2 in pairs(value) do 
 			drawStr = drawStr .. " " .. value2 
 		end 
@@ -136,7 +73,7 @@ function Game:drawGrid()
 		   gfx.setDitherPattern(0.5,gfx.image.kDitherTypeVerticalLine)             
 		end
 		  -- end
-		   gfx.drawLine(offsetX, offsetY + rowNum * spacing - 1, offsetX + #colData * spacing, offsetY + rowNum * spacing - 1)
+		   gfx.drawLine(offsetX, offsetY + rowNum * spacing - 1, offsetX + #puzzle.colData * spacing, offsetY + rowNum * spacing - 1)
 	   end
 	   
 	   if cursorLocY == rowNum then 
@@ -154,12 +91,12 @@ function Game:drawGrid()
 	   rowNum += 1
 	end
 		
-	gfx.drawLine(offsetX, offsetY, offsetX, offsetY + #rowData * spacing)
+	gfx.drawLine(offsetX, offsetY, offsetX, offsetY + #puzzle.rowData * spacing)
 	-- draw col data
-	colNum = 0
-	maxColVals = 6
-	for key,value in pairs(colData) do
-		drawStr = "" 
+	local colNum = 0
+	local maxColVals = 6
+	for key,value in pairs(puzzle.colData) do
+		local drawStr = "" 
 	
 		if #value < maxColVals then 
 			for i = 0, 4 - #value do
@@ -177,7 +114,7 @@ function Game:drawGrid()
 				gfx.setDitherPattern(0.5,gfx.image.kDitherTypeHorizontalLine)             
 			  end
 			   
-			   gfx.drawLine(offsetX + colNum * spacing - 1, offsetY, offsetX + colNum * spacing - 1, offsetY  + #rowData * spacing)
+			   gfx.drawLine(offsetX + colNum * spacing - 1, offsetY, offsetX + colNum * spacing - 1, offsetY  + #puzzle.rowData * spacing)
 		end
 		
 		if cursorLocX == colNum then 
@@ -200,9 +137,9 @@ end
 
 function Game:drawPlayerImage() 
 
-	for y= 0, img.height-1
+	for y= 0, #matrix
 	do
-		for x= 0, img.width-1
+		for x= 0, #matrix[y]
 		do            
 			if matrix[y][x] == 1 then 
 				gfx.setDitherPattern(0.0,gfx.image.kDitherTypeDiagonalLine)
@@ -218,22 +155,6 @@ function Game:drawPlayerImage()
 	
 	gfx.setDitherPattern(0.0,gfx.image.kDitherTypeDiagonalLine)
 
-end
-
-function Game:drawImage() 
-	gfx.setDitherPattern(0.0,gfx.image.kDitherTypeVerticalLine)
-
-	for y= 0, img.height-1
-	do
-		for x= 0, img.width-1
-		do
-			sample = img:sample(x,y)
-			if sample == gfx.kColorBlack then
-				gfx.fillRect(offsetX + spacing*x, offsetY + spacing*y, spacing-1, spacing-1)
-			elseif sample == gfx.kColorWhite then
-			end
-		end
-	end
 end
 
 function Game:drawCursor() 
@@ -301,16 +222,16 @@ function Game:updateCursor()
 		cursorLocY += 1
 	end
 	
-	if cursorLocX >= #colData then 
+	if cursorLocX >= #puzzle.colData then 
 		cursorLocX = 0
 	elseif cursorLocX < 0 then
-		cursorLocX = #colData - 1
+		cursorLocX = #puzzle.colData - 1
 	end 
 	
-	if cursorLocY >= #rowData then 
+	if cursorLocY >= #puzzle.rowData then 
 		cursorLocY = 0
 	elseif cursorLocY < 0 then 
-		cursorLocY = #rowData - 1
+		cursorLocY = #puzzle.rowData - 1
 	end 
 	
 	if playdate.buttonJustPressed(playdate.kButtonA) then 
