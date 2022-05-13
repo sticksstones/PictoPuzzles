@@ -6,16 +6,20 @@ local files = playdate.file.listFiles('assets/puzzles/')
 
 class('Puzzle').extends()
 
-function Puzzle:init(puzzleIndex)
+local function getPuzzleData()
+	return levelData 		
+end 
+
+function Puzzle:init(puzzleData)
 	Puzzle.super.init(self)
 	self.rowData = nil 
 	self.colData = nil 
 	
-	self:loadPuzzle(puzzleIndex)
+	self:loadPuzzle(puzzleData)
 end
 
-function Puzzle:loadPuzzle(fileIndex)
-   local img = gfx.image.new('assets/puzzles/'..files[fileIndex])  
+function Puzzle:loadPuzzle(puzzleData)
+   local img =  gfx.image.new('assets/puzzles/images/' .. puzzleData['image'])  
    
    self.rowData = table.create(img.height,0)
    -- get row data

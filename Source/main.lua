@@ -1,8 +1,7 @@
-import 'game'
 import 'main_menu'
 
 local initialized = false
-local menu = nil 
+menu = nil 
 
 local function initialize() 
    menu = MainMenu()   
@@ -10,9 +9,16 @@ local function initialize()
 end
 
 function playdate.update()
+   playdate.timer.updateTimers()
+   
    if not initialized then 
       initialize()
    end 
    
    menu:update()
 end
+
+
+function loadLevel(puzzleData)
+   menu:loadLevel(puzzleData)
+end 

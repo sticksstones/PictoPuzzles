@@ -1,7 +1,7 @@
 import "CoreLibs/graphics"
 import "CoreLibs/object"
-import "game"
-import "main"
+import "level_select"
+import 'Game'
 
 local gfx = playdate.graphics
 
@@ -13,12 +13,17 @@ function MainMenu:init()
 	MainMenu.super.init(self)
 	self.currentState = kMenuStateMain
 	self.game = nil
+	self.levelSelect = nil
 end
 
-function MainMenu:startGame() 
+function MainMenu:startLevelSelect() 
+	self.currentState = kMenuStateLevelSelect
+	self.levelSelect = LevelSelect()
+end 
+
+function MainMenu:loadLevel(puzzleData)
 	self.currentState = kMenuStatePlaying
-	self.game = Game()
-	self.game:loadRandomPuzzle()	
+	self.game = Game(puzzleData)
 end 
 
 function MainMenu:update() 
@@ -27,9 +32,12 @@ function MainMenu:update()
 		gfx.drawTextAligned("PICTO PUZZLES", playdate.display.getWidth()/2.0, 15, kTextAlignment.center)		
 		
 		if playdate.buttonJustReleased(playdate.kButtonA) then 
-			self:startGame()
+			self:startLevelSelect()
 		end
+	elseif self.currentState == kMenuStateLevelSelect then 
+		self.levelSelect:update()
 	elseif self.currentState == kMenuStatePlaying then 
 		self.game:update()
 	end	
 end 
+

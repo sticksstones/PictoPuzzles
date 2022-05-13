@@ -27,26 +27,23 @@ local matrix = nil
 
 local files = nil
 
-function Game:init()
+local initialized = false
+
+function Game:init(puzzleData)
 	Game.super.init(self)
 	-- load font
-	   local gridFont = gfx.font.new('assets/Picross-Small')
-	   gridFont:setTracking(0)
-	   gridFont:setLeading(4)
-	   gfx.setFont(gridFont)
-	   
-	   -- load puzzle
-	   self:loadPuzzles()
+   local gridFont = gfx.font.new('assets/Picross-Small')
+   gridFont:setTracking(0)
+   gridFont:setLeading(4)
+   gfx.setFont(gridFont)
+   self:loadPuzzle(puzzleData)
+   initTimestamp = playdate.getCurrentTimeMilliseconds()
+   initialized = true
 end
 
-function Game:loadPuzzles()
-   files = playdate.file.listFiles('assets/puzzles/')
-end
 
-function Game:loadRandomPuzzle() 
-	math.randomseed(playdate.getSecondsSinceEpoch())
-	fileIndex = math.random(1,#files)
-	puzzle = Puzzle(fileIndex)
+function Game:loadPuzzle(puzzleData) 
+	puzzle = Puzzle(puzzleData)
 	
 	matrix = table.create(#puzzle.colData, 0)
 	for y = 0, #puzzle.colData do 
@@ -261,10 +258,12 @@ end
 -- baseInit()
 
 function Game:update()
-	gfx.clear()
-	self:drawGrid()
-	self:updateCursor()
-	self:drawPlayerImage()
-	self:drawCursor()
+	if initialized and playdate.getCurrentTimeMilliseconds() - initTimestamp > 100 then
+		gfx.clear()
+		self:drawGrid()
+		self:updateCursor()
+		self:drawPlayerImage()
+		self:drawCursor()
+	end 
 	-- drawImage()
 end
