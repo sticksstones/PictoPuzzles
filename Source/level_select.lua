@@ -34,7 +34,32 @@ end
 
 function LevelSelect:update() 
 	gfx.clear()	
+	gfx.setDitherPattern(0.0,gfx.image.kDitherTypeVerticalLine)             
 	gridview:drawInRect(20, 20, 360, 200)
+	
+	if playdate.buttonJustPressed(playdate.kButtonUp) then 
+		gridview:selectPreviousRow(true)
+	end 
+
+	if playdate.buttonJustPressed(playdate.kButtonDown) then 
+		gridview:selectNextRow(true)
+	end 
+
+	if playdate.buttonJustPressed(playdate.kButtonLeft) then 
+		gridview:selectPreviousColumn(true)
+	end 
+
+	if playdate.buttonJustPressed(playdate.kButtonRight) then 
+		gridview:selectNextColumn(true)
+	end 
+
+	if playdate.buttonJustPressed(playdate.kButtonA) then 
+		local section,row,column = gridview:getSelection()
+		active = false
+		puzzleData = levelData['puzzles'][column]
+		goLoadLevel(puzzleData)
+	end 
+
 end
 
 function gridview:drawCell(section, row, column, selected, x, y, width, height)
@@ -55,40 +80,6 @@ end
 function gridview:drawSectionHeader(section, x, y, width, height)
 	gfx.drawText("*Section ".. section .. "*", x + 10, y + 8)
 end
-
-function playdate.upButtonUp()
-	if active then 
-		gridview:selectPreviousRow(true)
-	end
-end
-
-function playdate.downButtonUp()
-	if active then 
-		gridview:selectNextRow(true)
-	end 		
-end
-
-function playdate.leftButtonUp()
-	if active then 
-		gridview:selectPreviousColumn(true)
-	end 
-end
-
-function playdate.rightButtonUp()
-	if active then 
-		gridview:selectNextColumn(true)
-	end 
-end
-
-function playdate.AButtonDown() 
-	if active then 
-		local section,row,column = gridview:getSelection()
-		active = false
-		puzzleData = levelData['puzzles'][column]
-		loadLevel(puzzleData)
-	end	
-end
-
 
 
 

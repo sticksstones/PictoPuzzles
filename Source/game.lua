@@ -31,16 +31,7 @@ local initialized = false
 
 function Game:init(puzzleData)
 	Game.super.init(self)
-	-- load font
-   local gridFont = gfx.font.new('assets/Picross-Small')
-   gridFont:setTracking(0)
-   gridFont:setLeading(4)
-   gfx.setFont(gridFont)
-   self:loadPuzzle(puzzleData)
-   initTimestamp = playdate.getCurrentTimeMilliseconds()
-   initialized = true
 end
-
 
 function Game:loadPuzzle(puzzleData) 
 	puzzle = Puzzle(puzzleData)
@@ -52,6 +43,15 @@ function Game:loadPuzzle(puzzleData)
 			matrix[y][x] = 0
 		end
 	end 
+		
+	-- load font
+   local gridFont = gfx.font.new('assets/Picross-Small')
+   gridFont:setTracking(0)
+   gridFont:setLeading(4)
+   gfx.setFont(gridFont)
+   initTimestamp = playdate.getCurrentTimeMilliseconds()
+   initialized = true	
+	
 end
 
 function Game:drawGrid() 
@@ -267,3 +267,6 @@ function Game:update()
 	end 
 	-- drawImage()
 end
+
+
+
