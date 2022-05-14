@@ -54,7 +54,17 @@
 					"id": 1,
 					"name":"Cat",
 					"image":"cat.png"
-				}
+				},
+				{
+					"id": 7,
+					"name":"Cat 2",
+					"image":"cat2.png"
+				},
+				{
+					"id": 8,
+					"name":"Cat 3",
+					"image":"cat3.png"
+				}				
 			]
 		}			 
 	 ]  

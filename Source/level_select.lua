@@ -28,7 +28,7 @@ function LevelSelect:init()
 
 	local numRows = 0
 	for i=1, #levelData['puzzles']['categories'] do 
-		local calcRows = math.floor(#levelData['puzzles']['categories'][i]['puzzles']/3) + 1
+		local calcRows = math.ceil(#levelData['puzzles']['categories'][i]['puzzles']/3)
 		gridview:setNumberOfRowsInSection(i, calcRows)
 		numRows += calcRows
 	end 	
@@ -59,7 +59,7 @@ function LevelSelect:update()
 	gfx.setDitherPattern(0.0,gfx.image.kDitherTypeDiagonalLine)    
 	local width = 200
 	local height = 200        
-	local infox = 180 
+	local infox = 200 
 	local infoy = -30 		
 	gfx.drawRect(infox,-1,width,240)
 	
@@ -69,42 +69,43 @@ function LevelSelect:update()
 	local section, row, column = gridview:getSelection()
 	puzzleData = levelData['puzzles']['categories'][section]['puzzles'][(row-1)*column + column]
 	
-	local img =  gfx.image.new('assets/puzzles/images/' .. puzzleData['image'])  
-	
-	if isPuzzleCleared(puzzleData['id']) then 	
-		gfx.setDitherPattern(0.0,gfx.image.kDitherTypeVerticalLine)
-   		
-	
-		local pixelsize = 12
-		for imgy= 0, img.height-1
-		do
-			for imgx= 0, img.width-1
+	if puzzleData then 
+		local img =  gfx.image.new('assets/puzzles/images/' .. puzzleData['image'])  
+		
+		if isPuzzleCleared(puzzleData['id']) then 	
+			gfx.setDitherPattern(0.0,gfx.image.kDitherTypeVerticalLine)
+   			
+		
+			local pixelsize = 12
+			for imgy= 0, img.height-1
 			do
-				sample = img:sample(imgx,imgy)
-				if sample == gfx.kColorBlack then
-					gfx.fillRect(infox + (width - img.width*pixelsize)/2.0 + pixelsize*imgx, infoy + (height - img.height*pixelsize)/2.0 + pixelsize*imgy, pixelsize-1, pixelsize-1)
-				end 
+				for imgx= 0, img.width-1
+				do
+					sample = img:sample(imgx,imgy)
+					if sample == gfx.kColorBlack then
+						gfx.fillRect(infox + (width - img.width*pixelsize)/2.0 + pixelsize*imgx, infoy + (height - img.height*pixelsize)/2.0 + pixelsize*imgy, pixelsize-1, pixelsize-1)
+					end 
+				end
 			end
-		end
-		
-		gfx.drawTextAligned(string.upper(puzzleData['name']), infox + width/2.0, 150.0, kTextAlignment.center)
-
-		gfx.drawTextAligned(getClearTimeString(puzzleData['id']), infox + width/2.0, 160.0, kTextAlignment.center)
-
-	else 
-		pixelsize = 12
-		drawBlockText("?", infox + (width - 5*pixelsize)/2.0, infoy + (height - 5*pixelsize)/2.0, pixelsize)
-		
-		gfx.drawTextAligned("? ? ?", infox + width/2.0, 150.0, kTextAlignment.center)
-	end 
+			
+			gfx.drawTextAligned(string.upper(puzzleData['name']), infox + width/2.0, 150.0, kTextAlignment.center)
 	
-	gfx.drawTextAligned(img.width .. " X " .. img.height, infox + width/2.0, 135.0, kTextAlignment.center)
-
-	-- play button
-	local rectWidth = 75
-	gfx.drawRect(infox + width/2.0 - rectWidth/2.0, 185.0, rectWidth, 20.0)
-	gfx.drawTextAligned("PLAY", infox + width/2.0, 190.0, kTextAlignment.center)
+			gfx.drawTextAligned(getClearTimeString(puzzleData['id']), infox + width/2.0, 160.0, kTextAlignment.center)
 	
+		else 
+			pixelsize = 12
+			drawBlockText("?", infox + (width - 5*pixelsize)/2.0, infoy + (height - 5*pixelsize)/2.0, pixelsize)
+			
+			gfx.drawTextAligned("? ? ?", infox + width/2.0, 150.0, kTextAlignment.center)
+		end 
+		
+		gfx.drawTextAligned(img.width .. " X " .. img.height, infox + width/2.0, 135.0, kTextAlignment.center)
+	
+		-- play button
+		local rectWidth = 75
+		gfx.drawRect(infox + width/2.0 - rectWidth/2.0, 185.0, rectWidth, 20.0)
+		gfx.drawTextAligned("PLAY", infox + width/2.0, 190.0, kTextAlignment.center)
+	end
 	-- inputs
 	if playdate.buttonJustPressed(playdate.kButtonUp) then 
 		gridview:selectPreviousRow(false)
