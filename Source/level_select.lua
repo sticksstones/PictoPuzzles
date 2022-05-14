@@ -46,6 +46,7 @@ function LevelSelect:start()
 end 
 
 function LevelSelect:update() 
+	gfx.setFont(gridFont)
 	gfx.clear()	
 	gfx.setDitherPattern(0.0,gfx.image.kDitherTypeVerticalLine)             
 	gridview:drawInRect(20, 20, 180, 200)

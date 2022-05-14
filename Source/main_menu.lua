@@ -24,7 +24,7 @@ function MainMenu:update()
 	-- gfx.drawTextAligned("PRESS A TO START", playdate.display.getWidth()/2.0, 150, kTextAlignment.center)		
 		
 	if playdate.buttonJustReleased(playdate.kButtonA) then 
-		goLevelSelect()
+		goLevelSelect(true)
 	end
 end 
 

@@ -39,9 +39,12 @@ function goMainMenu()
    setState(kGameStateMainMenu)
 end 
 
-function goLevelSelect() 
+function goLevelSelect(resetState) 
+   resetState = resetState or false
    setState(kGameStateLevelSelect)
-   levelSelect:start()
+   if resetState then 
+      levelSelect:start()
+   end 
 end 
 
 function goLoadLevel(puzzleData)
