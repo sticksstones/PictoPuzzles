@@ -25,6 +25,9 @@ local offsetY = 72
 local screenWidth = playdate.display.getWidth()
 local screenHeight = playdate.display.getHeight()
 
+local imgWidth = 0
+local imgHeight = 0
+
 local setVal = 0
 
 local puzzle = nil
@@ -56,29 +59,30 @@ function Game:loadPuzzle(puzzleData)
 	initialized = false
 	puzzle = Puzzle(puzzleData)
 	
-	matrix = table.create(#puzzle.colData, 0)
-	for y = 0, #puzzle.colData do 
-		matrix[y] = table.create(#puzzle.rowData, 0)
-		for x = 0, #puzzle.rowData do 
+	local img =  gfx.image.new('assets/puzzles/images/' .. puzzleData['image'])  
+	
+	imgWidth = img.width 
+	imgHeight = img.height
+	
+	matrix = table.create(imgHeight)
+		for y = 0, imgHeight do 
+		matrix[y] = table.create(imgWidth, 0)
+		for x = 0, imgWidth do 
 			matrix[y][x] = 0
 		end
 	end 
 	
-	local img =  gfx.image.new('assets/puzzles/images/' .. puzzleData['image'])  
-
-	local imgWidth = img.width 
-	local imgHeight = img.height
-	imgmatrix = table.create(#puzzle.colData, 0)
-	for y = 0, imgWidth do 
-		imgmatrix[y] = table.create(#puzzle.rowData, 0)
-		for x = 0, imgHeight do 
+	imgmatrix = table.create(imgHeight, 0)
+	for y = 0, imgHeight-1 do 
+		imgmatrix[y] = table.create(imgWidth, 0)
+		for x = 0, imgWidth-1 do 
 						
 			local sample = img:sample(x,y)
 			if sample == gfx.kColorBlack then 
 				imgmatrix[y][x] = 1
 			else 
 				imgmatrix[y][x] = 0
-			end
+			end			
 		end
 	end 
 		
@@ -110,9 +114,8 @@ function Game:drawGrid()
 		   gfx.setDitherPattern(0.0,gfx.image.kDitherTypeVerticalLine)             
 		  else 
 		   gfx.setDitherPattern(0.5,gfx.image.kDitherTypeVerticalLine)             
-		end
-		  -- end
-		   gfx.drawLine(offsetX, offsetY + rowNum * spacing - 1, offsetX + #puzzle.colData * spacing, offsetY + rowNum * spacing - 1)
+		  end
+	      gfx.drawLine(offsetX, offsetY + rowNum * spacing - 1, offsetX + #puzzle.colData * spacing, offsetY + rowNum * spacing - 1)
 	   end
 	   
 	   if cursorLocY == rowNum then 
@@ -176,9 +179,9 @@ end
 function Game:drawPlayerImage() 
 	local won = true
 
-	for y= 0, #matrix
+	for y= 0, #matrix-1
 	do
-		for x= 0, #matrix[y]
+		for x= 0, #matrix[y]-1
 		do            
 			if imgmatrix[y][x] == 1 and matrix[y][x] ~= 1 then 
 				won = false
@@ -309,9 +312,6 @@ function Game:win()
 	puzzleComplete = true
 end 
 
--- init
--- baseInit()
-
 function Game:drawTime() 
 	gfx.setFont(gridFontNoKearning)
 
@@ -325,11 +325,12 @@ function Game:drawPuzzleComplete()
 end 
 
 function Game:debugCompletePuzzle() 
-	for y= 0, #puzzle.colData
+	for y= 0, #imgmatrix
 	do
-		for x= 0, #puzzle.rowData
-		do            
+		for x= 0, #imgmatrix[y]
+		do  
 			matrix[y][x] = imgmatrix[y][x]
+			
 		end 
 	end
 end 
@@ -359,7 +360,6 @@ function Game:update()
 		
 		
 	end 
-	-- drawImage()
 end
 
 

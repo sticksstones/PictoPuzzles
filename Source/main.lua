@@ -32,7 +32,10 @@ function playdate.update()
 end
 
 function setState(newState)
-   gameState = newState
+   if (gameState ~= newState) then
+      gameState = newState
+      osMenu:removeAllMenuItems()   
+   end
 end 
 
 function goMainMenu() 
@@ -50,6 +53,9 @@ end
 function goLoadLevel(puzzleData)
    setState(kGameStatePlaying)
    game:loadPuzzle(puzzleData)
+   local menuItem, error = osMenu:addMenuItem("[DEBUG] Finish", function() debugCompletePuzzle() end)
+   local menuItem2, error2 = osMenu:addMenuItem("Leave Puzzle", function() exitPuzzle() end)
+   
 end 
 
 function exitPuzzle() 
@@ -61,19 +67,12 @@ function debugCompletePuzzle()
 end 
 
 function playdate.gameWillPause()
-
-   if gameState == kGameStatePlaying then 
-      local menuItem2, error2 = osMenu:addMenuItem("[DEBUG] Finish", debugCompletePuzzle())
-
-      -- local menuItem, error = osMenu:addMenuItem("Leave Puzzle", exitPuzzle())
-      
-   end    
    -- local checkmarkMenuItem, error = osMenu:addCheckmarkMenuItem("Item 2", true, function(value)
    --     print("Checkmark menu item value changed to: ", value)
    -- end)
 end 
 
 function playdate.gameWillResume() 
-   osMenu:removeAllMenuItems()
+   -- osMenu:removeAllMenuItems()
 end
 
