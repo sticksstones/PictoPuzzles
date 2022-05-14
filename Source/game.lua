@@ -16,6 +16,7 @@ local dirPressTimestamp = -1.0
 local dirPressRepeatTimestamp = -1.0
 local dirPressRepeatTime = 100
 local dirPressTimeTillRepeat = 350
+local setContinue = 0
 
 local cursorLocX = 0
 local cursorLocY = 0
@@ -65,9 +66,9 @@ function Game:loadPuzzle(puzzleData)
 	imgHeight = img.height
 	
 	matrix = table.create(imgHeight)
-		for y = 0, imgHeight do 
+		for y = 0, imgHeight-1 do 
 		matrix[y] = table.create(imgWidth, 0)
-		for x = 0, imgWidth do 
+		for x = 0, imgWidth-1 do 
 			matrix[y][x] = 0
 		end
 	end 
@@ -179,11 +180,12 @@ end
 function Game:drawPlayerImage() 
 	local won = true
 
-	for y= 0, #matrix-1
+	for y= 0, #matrix
 	do
-		for x= 0, #matrix[y]-1
+		for x= 0, #matrix[y]
 		do            
-			if imgmatrix[y][x] == 1 and matrix[y][x] ~= 1 then 
+			if imgmatrix[y][x] == 1 and matrix[y][x] ~= 1
+				or imgmatrix[y][x] == 0 and matrix[y][x] == 1 then 
 				won = false
 			end 
 			
@@ -283,6 +285,7 @@ function Game:updateCursor()
 	
 	if playdate.buttonJustPressed(playdate.kButtonA) then 
 		newCellTarget = true 
+		setContinue = 0
 		
 		if matrix[cursorLocY][cursorLocX] ~= 1 then 
 			setVal = 1            
@@ -301,6 +304,13 @@ function Game:updateCursor()
 
 	if (playdate.buttonIsPressed(playdate.kButtonA) or playdate.buttonIsPressed(playdate.kButtonB)) and newCellTarget then 
 	   matrix[cursorLocY][cursorLocX] = setVal
+	   if setVal == 1 then
+		    
+	   	   synth:playNote(60+setContinue*20, 1, 0.033)
+		   setContinue += 1
+	   elseif setVal == -1 then 
+			noiseSynth:playNote(60, 0.5, 0.016)   
+	   end 
 	end 
 end 
 

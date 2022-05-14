@@ -7,6 +7,14 @@ local osMenu = playdate.getSystemMenu()
 local initialized = false
 menu = nil 
 
+-- beep boop
+synth = playdate.sound.synth.new(playdate.sound.kWaveTriangle)
+
+-- crackle
+noiseSynth = playdate.sound.synth.new(playdate.sound.kWaveNoise)
+
+-- synth = playdate.sound.synth.new(playdate.sound.kWavePOVosim)
+
 local kGameStateMainMenu, kGameStateLevelSelect, kGameStatePlaying, kGameStatePaused = 0, 1, 2,3
 local gameState = kGameStateMainMenu
 
