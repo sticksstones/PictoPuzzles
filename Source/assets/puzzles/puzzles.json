@@ -15,7 +15,7 @@
 			 ]
 		},
 		{ 
-			"id":"flowers",
+			"id":"nature",
 			"puzzles":
 			[
 				{
@@ -31,7 +31,7 @@
 			]
 		},
 		{ 
-			"id":"faces",
+			"id":"people",
 			"puzzles":
 			[
 				{

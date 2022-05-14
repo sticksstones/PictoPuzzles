@@ -56,12 +56,18 @@ function exitPuzzle()
    goLevelSelect()   
 end 
 
-
+function debugCompletePuzzle()
+   game:debugCompletePuzzle()
+end 
 
 function playdate.gameWillPause()
 
-   local menuItem, error = osMenu:addMenuItem("Leave Puzzle", exitPuzzle())
-   
+   if gameState == kGameStatePlaying then 
+      local menuItem2, error2 = osMenu:addMenuItem("[DEBUG] Finish", debugCompletePuzzle())
+
+      -- local menuItem, error = osMenu:addMenuItem("Leave Puzzle", exitPuzzle())
+      
+   end    
    -- local checkmarkMenuItem, error = osMenu:addCheckmarkMenuItem("Item 2", true, function(value)
    --     print("Checkmark menu item value changed to: ", value)
    -- end)
