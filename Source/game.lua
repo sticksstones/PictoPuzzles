@@ -1,6 +1,8 @@
 import "CoreLibs/graphics"
 import "CoreLibs/object"
 import 'puzzle'
+import 'save_funcs'
+import 'funcs'
 
 local gfx = playdate.graphics
 
@@ -24,16 +26,31 @@ local setVal = 0
 
 local puzzle = nil
 local matrix = nil
+local imgmatrix = nil
 
 local files = nil
+local puzzleComplete = false
 
 local initialized = false
+local gridFont = gfx.font.new('assets/Picross-Small')
+gridFont:setTracking(0)
+gridFont:setLeading(4)
 
-function Game:init(puzzleData)
+local gridFontNoKearning = gfx.font.new('assets/Picross-Small-no-kearning')
+gridFontNoKearning:setTracking(2)
+
+local blockyFont = gfx.font.new('assets/blocky')
+blockyFont:setTracking(1)
+
+
+function Game:init()
 	Game.super.init(self)
 end
 
 function Game:loadPuzzle(puzzleData) 
+	puzzleComplete = false
+	initialized = false
+	self.puzzleData = tabledeepcopy(puzzleData)
 	puzzle = Puzzle(puzzleData)
 	
 	matrix = table.create(#puzzle.colData, 0)
@@ -43,18 +60,31 @@ function Game:loadPuzzle(puzzleData)
 			matrix[y][x] = 0
 		end
 	end 
+	
+	local img =  gfx.image.new('assets/puzzles/images/' .. puzzleData['image'])  
+
+	imgmatrix = table.create(#puzzle.colData, 0)
+	for y = 0, #puzzle.colData do 
+		imgmatrix[y] = table.create(#puzzle.rowData, 0)
+		for x = 0, #puzzle.rowData do 
+			sample = img:sample(x,y)
+			if sample == gfx.kColorBlack then 
+				imgmatrix[y][x] = 1
+			end
+		end
+	end 
 		
 	-- load font
-   local gridFont = gfx.font.new('assets/Picross-Small')
-   gridFont:setTracking(0)
-   gridFont:setLeading(4)
+
    gfx.setFont(gridFont)
+  
    initTimestamp = playdate.getCurrentTimeMilliseconds()
-   initialized = true	
-	
+   initialized = true		
 end
 
 function Game:drawGrid() 
+	gfx.setFont(gridFont)
+
 	gfx.drawLine(offsetX, offsetY, offsetX + #puzzle.colData * spacing, offsetY)
 	-- draw row data
 	local rowNum = 0
@@ -79,9 +109,8 @@ function Game:drawGrid()
 		  gfx.fillRect(0, offsetY + rowNum * spacing - 2, offsetX, spacing)
 		  gfx.setImageDrawMode(playdate.graphics.kDrawModeFillWhite)
 		  gfx.drawTextAligned(drawStr, offsetX - 4, offsetY + rowNum * spacing, kTextAlignment.right)
-				 
+		  gfx.setImageDrawMode(playdate.graphics.kDrawModeCopy)				 
 	   else 
-		  gfx.setImageDrawMode(playdate.graphics.kDrawModeFillBlack)
 		  gfx.drawTextAligned(drawStr, offsetX - 4, offsetY + rowNum * spacing, kTextAlignment.right)                    
 	   end 
 	   
@@ -120,9 +149,9 @@ function Game:drawGrid()
 			gfx.fillRect(offsetX + colNum * spacing, 0, spacing, offsetY)
 			gfx.setImageDrawMode(playdate.graphics.kDrawModeFillWhite)
 			 gfx.drawTextAligned(drawStr, offsetX + colNum * spacing + 2, 10 + offsetY - spacing*maxColVals, kTextAlignment.centered)
+			gfx.setImageDrawMode(playdate.graphics.kDrawModeCopy)
 				   
 		 else 
-			gfx.setImageDrawMode(playdate.graphics.kDrawModeFillBlack)
 			 gfx.drawTextAligned(drawStr, offsetX + colNum * spacing + 2, 10 + offsetY - spacing*maxColVals, kTextAlignment.centered)
 					  
 		 end 
@@ -133,11 +162,16 @@ function Game:drawGrid()
 end
 
 function Game:drawPlayerImage() 
+	local won = true
 
 	for y= 0, #matrix
 	do
 		for x= 0, #matrix[y]
 		do            
+			if imgmatrix[y][x] == 1 and matrix[y][x] ~= 1 then 
+				won = false
+			end 
+			
 			if matrix[y][x] == 1 then 
 				gfx.setDitherPattern(0.0,gfx.image.kDitherTypeDiagonalLine)
 				gfx.fillRect(offsetX + spacing*x, offsetY + spacing*y, spacing-1, spacing-1)
@@ -151,7 +185,10 @@ function Game:drawPlayerImage()
 	end
 	
 	gfx.setDitherPattern(0.0,gfx.image.kDitherTypeDiagonalLine)
-
+	
+	if won and not puzzleComplete then 
+		Game:win()
+	end 
 end
 
 function Game:drawCursor() 
@@ -254,16 +291,50 @@ function Game:updateCursor()
 	end 
 end 
 
+function Game:win() 
+	local puzzleId = puzzleData['id']
+	local clearTime = playdate.getCurrentTimeMilliseconds() - initTimestamp
+	savePuzzleClear(puzzleId, clearTime)
+	puzzleComplete = true
+end 
+
 -- init
 -- baseInit()
+
+function Game:drawTime() 
+	gfx.setFont(gridFontNoKearning)
+
+	gfx.drawTextAligned(timeToString(playdate.getCurrentTimeMilliseconds() - initTimestamp), 100, 20, kTextAlignment.right)
+end 
+
+function Game:drawPuzzleComplete() 
+	gfx.setFont(blockyFont)
+	gfx.setDitherPattern(0.0,gfx.image.kDitherTypeVerticalLine)             
+	gfx.drawTextAligned("COMPLETED IN " .. getClearTimeString(puzzleData['id']), 200, 180, kTextAlignment.center)
+	
+end 
 
 function Game:update()
 	if initialized and playdate.getCurrentTimeMilliseconds() - initTimestamp > 100 then
 		gfx.clear()
-		self:drawGrid()
-		self:updateCursor()
+		
+		if not puzzleComplete then 
+			self:drawGrid()
+			self:updateCursor()
+			self:drawCursor()
+			self:drawTime()
+		end 
+		
+		if puzzleComplete then 
+			self:drawPuzzleComplete()
+			if playdate.buttonJustPressed(playdate.kButtonA) then 
+				goLevelSelect()
+			end 			
+		end 
+			
 		self:drawPlayerImage()
-		self:drawCursor()
+		
+		
 	end 
 	-- drawImage()
 end

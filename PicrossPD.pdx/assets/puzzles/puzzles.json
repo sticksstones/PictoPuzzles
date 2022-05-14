@@ -1,24 +1,62 @@
 {
-  "puzzles": [ 
-	{
-		"id": 1,
-		"image":"cat.png"
-	},  
-	{
-		"id": 2,
-		"image":"face.png"
-	},
-	{
-		"id": 3,
-		"image":"flower.png"
-	},
-	{
-		"id": 4,
-		"image":"face2.png"
-	},
-	{
-		"id": 5,
-		"image":"flower2.png"
-	}  	
-  ]
+  "puzzles": 
+  { 
+	 "categories":
+	 [
+		 { 
+			 "id":"test",
+			 "puzzles":
+			 [
+				 {
+					 "id": 6,
+					 "name":"Test",
+					 "image":"o.png"
+				 }
+			 ]
+		},
+		{ 
+			"id":"flowers",
+			"puzzles":
+			[
+				{
+					"id": 3,
+					"name":"Flower 1",
+					"image":"flower.png"
+				},
+				{
+					"id": 5,
+					"name":"Flower 2",
+					"image":"flower2.png"
+				}
+			]
+		},
+		{ 
+			"id":"faces",
+			"puzzles":
+			[
+				{
+					"id": 2,
+					"name":"Face 1",
+					"image":"face.png"
+				},
+				{
+					"id": 4,
+					"name":"Face 2",
+					"image":"face2.png"
+				}
+			]
+		},
+		{ 
+			"id":"animals",
+			"puzzles":
+			[
+				{
+					"id": 1,
+					"name":"Cat",
+					"image":"cat.png"
+				}
+			]
+		}			 
+	 ]  
+  }
 }

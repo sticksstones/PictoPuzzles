@@ -14,12 +14,12 @@ function Puzzle:init(puzzleData)
 	Puzzle.super.init(self)
 	self.rowData = nil 
 	self.colData = nil 
-	
-	self:loadPuzzle(puzzleData)
+	self.puzzleData = puzzleData
+	self:loadPuzzle(self.puzzleData)
 end
 
 function Puzzle:loadPuzzle(puzzleData)
-   local img =  gfx.image.new('assets/puzzles/images/' .. puzzleData['image'])  
+   local img =  gfx.image.new('assets/puzzles/images/' .. self.puzzleData['image'])  
    
    self.rowData = table.create(img.height,0)
    -- get row data
@@ -88,7 +88,7 @@ end
 
 function Puzzle:drawImage(posx, posy, pixelsize) 
 	gfx.setDitherPattern(0.0,gfx.image.kDitherTypeVerticalLine)
-   local img = gfx.image.new('assets/puzzles/'..files[fileIndex])  
+   local img =  gfx.image.new('assets/puzzles/images/' .. self.puzzleData['image'])  
 
 	for y= 0, img.height-1
 	do
@@ -96,7 +96,7 @@ function Puzzle:drawImage(posx, posy, pixelsize)
 		do
 			sample = img:sample(x,y)
 			if sample == gfx.kColorBlack then
-				gfx.fillRect(posX + pixelsize*x, posY + pixelsize*y, pixelsize-1, pixelsize-1)
+				gfx.fillRect(posx + pixelsize*x, posy + pixelsize*y, pixelsize-1, pixelsize-1)
 			end 
 		end
 	end

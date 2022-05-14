@@ -17,8 +17,10 @@ function MainMenu:update()
 	-- gfx.drawTextAligned("PICTO PUZZLES", playdate.display.getWidth()/2.0, 15, kTextAlignment.center)		
 	drawBlockText("PICTO PUZZLES", 25, 70, 5)
 
-	drawBlockText("PRESS A TO START", 25, 150, 4)
-	-- gfx.setFont(gridFont)
+	drawBlockText("PUZZLES", 25, 150, 4, 0, true)
+	gfx.setFont(gridFont)
+	-- playdate.display.setScale(4.0)
+	
 	-- gfx.drawTextAligned("PRESS A TO START", playdate.display.getWidth()/2.0, 150, kTextAlignment.center)		
 		
 	if playdate.buttonJustReleased(playdate.kButtonA) then 
