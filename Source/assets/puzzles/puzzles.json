@@ -8,14 +8,14 @@
 			 "puzzles":
 			 [
 				 {
-					 "id": 6,
+					 "id": 1,
 					 "name":"Test",
-					 "image":"o.png"
+					 "images":[ "o.png" ]
 				 },
 				 {
-					  "id": 9,
+					  "id": 2,
 					  "name":"Test",
-					  "image":"owide.png"
+					  "images":["owide.png"]
 				 }
 			 ]
 		},
@@ -24,14 +24,19 @@
 			"puzzles":
 			[
 				{
-					"id": 3,
-					"name":"Flower 1",
-					"image":"flower.png"
+					"id": 100,
+					"name":"Mushroom",
+					"images":[ "mushroomLU.png","mushroomRU.png","mushroomLD.png","mushroomRD.png"]			
 				},
 				{
-					"id": 5,
+					"id": 101,
+					"name":"Flower 1",
+					"images":["flower.png"]
+				},
+				{
+					"id": 102,
 					"name":"Flower 2",
-					"image":"flower2.png"
+					"images":["flower2.png"]
 				}
 			]
 		},
@@ -40,14 +45,14 @@
 			"puzzles":
 			[
 				{
-					"id": 2,
+					"id": 200,
 					"name":"Face 1",
-					"image":"face.png"
+					"images":["face.png"]
 				},
 				{
-					"id": 4,
+					"id": 201,
 					"name":"Face 2",
-					"image":"face2.png"
+					"images":["face2.png"]
 				}
 			]
 		},
@@ -56,19 +61,19 @@
 			"puzzles":
 			[
 				{
-					"id": 1,
+					"id": 300,
 					"name":"Cat",
-					"image":"cat.png"
+					"images":["cat.png"]
 				},
 				{
-					"id": 7,
+					"id": 301,
 					"name":"Cat 2",
-					"image":"cat2.png"
+					"images":["cat2.png"]
 				},
 				{
-					"id": 8,
+					"id": 302,
 					"name":"Cat 3",
-					"image":"cat3.png"
+					"images":["cat3.png"]
 				}				
 			]
 		}			 

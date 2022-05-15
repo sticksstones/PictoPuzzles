@@ -18,5 +18,6 @@ function timeToString(milliseconds)
 	clearMilliseconds = math.floor(milliseconds%1000)
 	clearMinutes = math.floor(totalSeconds/60)
 	clearSeconds = math.floor(totalSeconds%60)
-	return string.format("%02d:%02d:%03d",clearMinutes,clearSeconds,clearMilliseconds)	
+	-- return string.format("%02d:%02d:%03d",clearMinutes,clearSeconds,clearMilliseconds)	
+	return string.format("%02d:%02d",clearMinutes,clearSeconds)	
 end 
