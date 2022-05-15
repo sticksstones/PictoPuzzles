@@ -16,6 +16,13 @@
 					  "id": 2,
 					  "name":"Test",
 					  "images":["owide.png"]
+				 },
+				 {
+					   "id": 3,
+					   "name":"Test",
+					   "override-width":1,
+					   "override-height":2,
+					   "images":["owide.png","owide.png"]
 				 }
 			 ]
 		},

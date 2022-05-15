@@ -100,14 +100,16 @@ function Puzzle:loadPuzzle(puzzleData)
 		self:loadImage(img)
 	end 
 	
-	self.dimension = math.sqrt(#self.puzzleData['images'])
-	self.totalWidth = math.floor(self.dimension * self.pieceWidth)
-	self.totalHeight = math.floor(self.dimension * self.pieceHeight)
+	self.dimensionWidth = self.puzzleData['override-width'] ~= nil and self.puzzleData['override-width'] or math.sqrt(#self.puzzleData['images'])
+	self.dimensionHeight = self.puzzleData['override-height'] ~= nil and self.puzzleData['override-height'] or math.sqrt(#self.puzzleData['images'])
+	self.totalWidth = math.floor(self.dimensionWidth * self.pieceWidth)
+	self.totalHeight = math.floor(self.dimensionHeight * self.pieceHeight)
 
 end
 
-function Puzzle:getPixelSizeForWidth(width)	
-	return math.min(math.max(2, math.floor(width / self.totalWidth)),8)
+function Puzzle:getPixelSizeForWidth(width)
+	local constrainedDimension = self.totalHeight / self.totalWidth > 1.0 and self.totalHeight or self.totalWidth 
+	return math.min(math.max(2, math.floor(width / constrainedDimension)),8)
 end 
 
 function Puzzle:drawImage(posx, posy, width) 
@@ -117,8 +119,8 @@ function Puzzle:drawImage(posx, posy, width)
 
 	for i=1, #self.puzzleData['images'] do 
 		local img = gfx.image.new('assets/puzzles/images/' .. self.puzzleData['images'][i]) 		
-		local row = math.floor((i-1) / self.dimension)
-		local column = math.floor((i-1) % self.dimension)
+		local row = math.floor((i-1) / self.dimensionWidth)
+		local column = math.floor((i-1) % self.dimensionWidth)
 
 		for y= 0, img.height-1
 		do

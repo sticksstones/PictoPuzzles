@@ -70,13 +70,13 @@ function LevelSelect:update()
 	puzzleData = levelData['puzzles']['categories'][section]['puzzles'][(row-1)*column + column]
 	
 	if puzzleData then 
-		local puzzle = Puzzle(puzzleData)
+		
+		local puzzle = getPuzzle(section,row,column)
 
-		if true then --isPuzzleCleared(puzzleData['id']) then 	
+		if  isPuzzleCleared(puzzleData['id']) then 	
 			gfx.setDitherPattern(0.0,gfx.image.kDitherTypeVerticalLine)
+
 			local heightRatio = puzzle.totalWidth / puzzle.totalHeight
-			local paneRatio = width / height
-			local aspectRatio = heightRatio / paneRatio
    			local constrainedDimension = heightRatio > 1.0 and width or height
 			   
 			local puzzleTotalPixelWidth = puzzle.totalWidth*puzzle:getPixelSizeForWidth(constrainedDimension)
@@ -99,8 +99,8 @@ function LevelSelect:update()
 	
 		-- play button
 		local rectWidth = 75
-		gfx.drawRect(infox + width/2.0 - rectWidth/2.0, 190.0, rectWidth, 20.0)
-		gfx.drawTextAligned("PLAY", infox + width/2.0, 195.0, kTextAlignment.center)
+		gfx.drawRect(infox + width/2.0 - rectWidth/2.0, 185.0, rectWidth, 20.0)
+		gfx.drawTextAligned("PLAY", infox + width/2.0, 190.0, kTextAlignment.center)
 	end
 	-- inputs
 	if playdate.buttonJustPressed(playdate.kButtonUp) then 
@@ -109,7 +109,6 @@ function LevelSelect:update()
 		if (row - 1) * column + column > #levelData['puzzles']['categories'][section]['puzzles'] then 
 			gridview:setSelection(section,row,1)
 			gridview:scrollCellToCenter(section,row,1,true)
-			-- gridview:selectPreviousColumn(false)
 		end
 
 	end 
@@ -120,7 +119,6 @@ function LevelSelect:update()
 		if (row - 1) * column + column > #levelData['puzzles']['categories'][section]['puzzles'] then 
 			gridview:setSelection(section,row,1)
 			gridview:scrollCellToCenter(section,row,1,true)
-			-- gridview:selectPreviousColumn(false)
 		end
 	end 
 
@@ -174,27 +172,36 @@ function gridview:drawCell(section, row, column, selected, x, y, width, height)
 	if (row - 1) * column + column <= #levelData['puzzles']['categories'][section]['puzzles'] then 
 		
 		local puzzle = getPuzzle(section,row,column)
-		local heightRatio = puzzle.totalWidth / puzzle.totalHeight		local cellRatio = width/height			
-		local adjustedXPos = x + (cellRatio - heightRatio)/2.0 * height
-		local borderScale = 1.1
-		local margin = borderScale - 1.0
-		
+		local heightRatio = puzzle.totalWidth / puzzle.totalHeight	
+		local constrainedDimension = heightRatio > 1.0 and width or height
+		local puzzleTotalPixelWidth = puzzle.totalWidth*puzzle:getPixelSizeForWidth(constrainedDimension)
+		local puzzleTotalPixelHeight = puzzle.totalHeight*puzzle:getPixelSizeForWidth(constrainedDimension)
+		local adjustedXPos = x + (width - puzzleTotalPixelWidth)/2.0
+		local adjustedYPos = y + (height - puzzleTotalPixelHeight)/2.0
+	
+		local borderScale = 1.05
+		local margin = (borderScale - 1.0)*0.5
+
 		if selected then
 			gfx.setLineWidth(3)
-			gfx.drawRect(adjustedXPos,y,heightRatio * height * borderScale,height * borderScale)
 		else
 			gfx.setLineWidth(0)
-			gfx.drawRect(adjustedXPos,y,heightRatio * height * borderScale,height * borderScale)
 		end
-				
 		
-		if true then --isPuzzleCleared(puzzleData['id']) then 
+		gfx.drawRect(
+			x,
+			y,
+			width*borderScale,
+			height*borderScale
+		)
+
+		if isPuzzleCleared(puzzle.puzzleData['id']) then 
 			gfx.setDitherPattern(0.0,gfx.image.kDitherTypeVerticalLine)
-			local xMultiplier = heightRatio > 1.0 and width or height
-			-- local yMultiplier = heightRatio <= 1.0 and width or height
-			puzzle:drawImage(adjustedXPos + xMultiplier*margin*0.5, y + height*margin*0.5, height*heightRatio)
+			puzzle:drawImage(adjustedXPos + margin*width, adjustedYPos + margin*height, constrainedDimension)
 		else 				
-			drawBlockText("?", x+7, y+6, 7)
+			local blockTextSize = 8
+			local totalSize = 5 * blockTextSize
+			drawBlockText("?", x + (width - totalSize)/2.0, y + (height - totalSize)/2.0, blockTextSize)
 		end
 		
 	end
