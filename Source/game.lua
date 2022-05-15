@@ -42,6 +42,7 @@ local setVal = 0
 local imageIndex = 1
 
 local puzzle = nil
+local matrices = nil
 local matrix = nil
 local imgmatrix = nil
 
@@ -69,15 +70,21 @@ function Game:loadPuzzle(puzzleSelected)
     puzzleComplete = false
     initialized = false
     puzzle = puzzleSelected
-
-    matrix = table.create(puzzle.pieceHeight)
-    for y = 0, puzzle.pieceHeight-1 do
-        matrix[y] = table.create(puzzle.pieceWidth, 0)
-        for x = 0, puzzle.pieceWidth-1 do
-            matrix[y][x] = 0
-        end
+    
+    matrices = table.create(#puzzle.imgmatrices,0)
+    
+    for i=1, #puzzle.imgmatrices do 
+       local thisMatrix = table.create(puzzle.pieceHeight)
+       for y = 0, puzzle.pieceHeight-1 do
+           thisMatrix[y] = table.create(puzzle.pieceWidth, 0)
+           for x = 0, puzzle.pieceWidth-1 do
+               thisMatrix[y][x] = 0
+           end
+       end
+       table.insert(matrices, thisMatrix)
     end
-
+     
+    matrix = matrices[imageIndex]
     imgmatrix = puzzle.imgmatrices[imageIndex]
 
     -- load font
