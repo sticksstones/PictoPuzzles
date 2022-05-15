@@ -23,7 +23,8 @@ local cursorLocX = 0
 local cursorLocY = 0
 
 local kDefaultSpacing <const> = 16
-local kDefaultOffsetX <const> = 128
+local kLeftHandOffsetX <const> = 128
+local kRightHandOffsetX <const> = 64
 local kDefaultOffsetY <const> = 72
 
 local kZoomOutSpacing <const> = 8
@@ -45,10 +46,14 @@ local puzzle = nil
 local matrices = nil
 local matrix = nil
 local imgmatrix = nil
+local matricesCompletionStatus = nil
 
 local files = nil
 local puzzleComplete = false
 local puzzleFinishTimestamp = 0.0
+local imageIndexChangedTimestamp = 0.0
+local targetDrawOffsetX = 0.0
+local targetDrawOffsetY = 0.0
 
 local initialized = false
 local gridFont <const> = gfx.font.new('assets/Picross-Small')
@@ -63,338 +68,545 @@ blockyFont:setTracking(1)
 
 
 function Game:init()
-    Game.super.init(self)
+ 	Game.super.init(self)
 end
 
 function Game:loadPuzzle(puzzleSelected)
-    puzzleComplete = false
-    initialized = false
-    puzzle = puzzleSelected
-    
-    matrices = table.create(#puzzle.imgmatrices,0)
-    
-    for i=1, #puzzle.imgmatrices do 
-       local thisMatrix = table.create(puzzle.pieceHeight)
-       for y = 0, puzzle.pieceHeight-1 do
-           thisMatrix[y] = table.create(puzzle.pieceWidth, 0)
-           for x = 0, puzzle.pieceWidth-1 do
-               thisMatrix[y][x] = 0
-           end
-       end
-       table.insert(matrices, thisMatrix)
-    end
-     
-    matrix = matrices[imageIndex]
-    imgmatrix = puzzle.imgmatrices[imageIndex]
+ 	puzzleComplete = false
+ 	initialized = false
+ 	puzzle = puzzleSelected
 
-    -- load font
+ 	matrices = table.create(#puzzle.imgmatrices,0)
+   matricesCompletionStatus = table.create(#matrices,0)
+
+ 	for i=1, #puzzle.imgmatrices do
+ 		local thisMatrix = table.create(puzzle.pieceHeight)
+ 		for y = 0, puzzle.pieceHeight-1 do
+  			thisMatrix[y] = table.create(puzzle.pieceWidth, 0)
+  			for x = 0, puzzle.pieceWidth-1 do
+					thisMatrix[y][x] = 0
+  			end
+ 		end
+ 		table.insert(matrices, thisMatrix)
+      matricesCompletionStatus[i] = 0
+ 	end
+
+ 	matrix = matrices[imageIndex]
+ 	imgmatrix = puzzle.imgmatrices[imageIndex]
+
+ 	-- load font
+
+	gfx.setFont(gridFont)
+
+	puzzleFinishTimestamp = 0.0
+	offsetX = kLeftHandOffsetX
+	offsetY = kDefaultOffsetY
+	spacing = kDefaultSpacing
+
+   imageIndex = 1
+	initTimestamp = playdate.getCurrentTimeMilliseconds()
+	initialized = true
+end
+
+function Game:isOnRightHandSide()
+   local thisImageIndex = imageIndex
+   local column = math.floor((thisImageIndex-1) % puzzle.dimensionWidth)
+
+   return (column > 0 and column + 1 == puzzle.dimensionWidth)
+end 
+
+function Game:drawGrid(overrideImageIndex)
+   local thisImageIndex = overrideImageIndex and overrideImageIndex or imageIndex
+   local row = math.floor((thisImageIndex-1) / puzzle.dimensionWidth)
+   local column = math.floor((thisImageIndex-1) % puzzle.dimensionWidth)
+   local adjustedOffsetX = offsetX + (column * (puzzle.pieceWidth*spacing))
+   local adjustedOffsetY = offsetY + (row * (puzzle.pieceHeight*spacing))
 
    gfx.setFont(gridFont)
 
-   puzzleFinishTimestamp = 0.0
-   offsetX = kDefaultOffsetX
-   offsetY = kDefaultOffsetY
-   spacing = kDefaultSpacing
+   if imageIndex == thisImageIndex then 
+      gfx.setDitherPattern(0.0,gfx.image.kDitherTypeVerticalLine)
+   else 
+      gfx.setDitherPattern(0.5,gfx.image.kDitherTypeVerticalLine)
+   end 
+
+   gfx.drawLine(adjustedOffsetX, adjustedOffsetY, adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing, adjustedOffsetY)
+
+   gfx.drawLine(adjustedOffsetX, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing, adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing)
+
    
-   initTimestamp = playdate.getCurrentTimeMilliseconds()
-   initialized = true
-end
+   -- draw row data
+   local rowNum = 0
+   for key,value in pairs(puzzle.rowData[thisImageIndex]) do
+        
+      -- draw grid lines
+      if rowNum >= 1 then
+         if rowNum % 5 == 0 or zoom < 1.0 then
+            gfx.setDitherPattern(0.0,gfx.image.kDitherTypeVerticalLine)
+         elseif thisImageIndex == imageIndex then 
+            gfx.setDitherPattern(0.5,gfx.image.kDitherTypeVerticalLine)
+         else
+            gfx.setDitherPattern(0.75,gfx.image.kDitherTypeVerticalLine)
+         end
 
-function Game:drawGrid()
-    gfx.setFont(gridFont)
+         gfx.drawLine(
+            adjustedOffsetX, 
+            adjustedOffsetY + rowNum * spacing - 1, 
+            adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing, 
+            adjustedOffsetY + rowNum * spacing - 1
+         )
+      end
 
-    gfx.drawLine(offsetX, offsetY, offsetX + #puzzle.colData[imageIndex] * spacing, offsetY)
-    -- draw row data
-    local rowNum = 0
-    for key,value in pairs(puzzle.rowData[imageIndex]) do
-        local drawStr = ""
-        for key2,value2 in pairs(value) do
+      -- draw grid labels
+      if zoom >= 1.0 and thisImageIndex == imageIndex then
+         local drawStr = ""
+         
+         for key2,value2 in pairs(value) do
             drawStr = drawStr .. " " .. value2
-        end
-       if rowNum >= 1 then
-          if rowNum % 5 == 0 or zoom < 1.0 then
-           gfx.setDitherPattern(0.0,gfx.image.kDitherTypeVerticalLine)
-          else
-           gfx.setDitherPattern(0.5,gfx.image.kDitherTypeVerticalLine)
-          end
-          gfx.drawLine(offsetX, offsetY + rowNum * spacing - 1, offsetX + #puzzle.colData[imageIndex] * spacing, offsetY + rowNum * spacing - 1)
-       end
+         end
 
-       if zoom >= 1.0 then
-           if cursorLocY == rowNum then
-              gfx.setDitherPattern(0.0, gfx.image.kDitherTypeVerticalLine)
-              gfx.setColor(gfx.kColorBlack)
-              gfx.fillRect(0, offsetY + rowNum * spacing - 2, offsetX, spacing)
-              gfx.setImageDrawMode(playdate.graphics.kDrawModeFillWhite)
+         if cursorLocY == rowNum then
+            gfx.setDitherPattern(0.0, gfx.image.kDitherTypeVerticalLine)
+            gfx.setColor(gfx.kColorBlack)
 
-              gfx.drawTextAligned(drawStr, offsetX - 4, offsetY + rowNum * spacing, kTextAlignment.right)
-              gfx.setImageDrawMode(playdate.graphics.kDrawModeCopy)
-                  else
-                  gfx.drawTextAligned(drawStr, offsetX - 4, offsetY + rowNum * spacing, kTextAlignment.right)
+            if self:isOnRightHandSide() then 
+               gfx.fillRect(adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing, adjustedOffsetY + rowNum * spacing, 999, spacing)
+               
+               gfx.setImageDrawMode(playdate.graphics.kDrawModeFillWhite)
+               
+               gfx.drawTextAligned(drawStr, adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing, adjustedOffsetY + rowNum * spacing + 2, kTextAlignment.left)
+               gfx.setImageDrawMode(playdate.graphics.kDrawModeCopy)
+
+            else 
+               gfx.setColor(gfx.kColorBlack)
+               gfx.fillRect(0, adjustedOffsetY + rowNum * spacing, adjustedOffsetX, spacing)
+               
+               gfx.setImageDrawMode(playdate.graphics.kDrawModeFillWhite)
+               
+               gfx.drawTextAligned(drawStr, adjustedOffsetX - 4, adjustedOffsetY + rowNum * spacing + 2, kTextAlignment.right)
+               gfx.setImageDrawMode(playdate.graphics.kDrawModeCopy)
+         
             end
-           end
+         else
+            if self:isOnRightHandSide() then 
+               gfx.drawTextAligned(drawStr, adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing, adjustedOffsetY + rowNum * spacing + 2, kTextAlignment.left)
+            else 
+               gfx.drawTextAligned(drawStr, adjustedOffsetX - 4, adjustedOffsetY + rowNum * spacing + 2, kTextAlignment.right)
+            end
+         end
+      end
 
-       rowNum += 1
-    end
 
-    gfx.drawLine(offsetX, offsetY, offsetX, offsetY + #puzzle.rowData[imageIndex] * spacing)
-    -- draw col data
-    local colNum = 0
-    local maxColVals = 6
-    for key,value in pairs(puzzle.colData[imageIndex]) do
-        local drawStr = ""
+      rowNum += 1
+   end
 
-        if #value < maxColVals then
+   if imageIndex == thisImageIndex then 
+      gfx.setDitherPattern(0.0,gfx.image.kDitherTypeHorizontalLine)
+   else 
+      gfx.setDitherPattern(0.5,gfx.image.kDitherTypeHorizontalLine)
+   end 
+
+   gfx.drawLine(adjustedOffsetX, adjustedOffsetY, adjustedOffsetX, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing)
+
+   gfx.drawLine(adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing, adjustedOffsetY, adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing)
+
+
+   -- draw col data
+   local colNum = 0
+   local maxColVals = 6
+   
+   for key,value in pairs(puzzle.colData[thisImageIndex]) do
+
+      -- draw grid lines
+      if colNum >= 1 then
+         if colNum % 5 == 0 or zoom < 1.0 then
+            gfx.setDitherPattern(0.0,gfx.image.kDitherTypeHorizontalLine)
+         elseif thisImageIndex == imageIndex then 
+            gfx.setDitherPattern(0.5,gfx.image.kDitherTypeHorizontalLine)
+         else
+            gfx.setDitherPattern(0.75,gfx.image.kDitherTypeHorizontalLine)
+         end
+
+         gfx.drawLine(
+            adjustedOffsetX + colNum * spacing - 1, 
+            adjustedOffsetY, 
+            adjustedOffsetX + colNum * spacing - 1,
+            adjustedOffsetY  + #puzzle.rowData[thisImageIndex] * spacing
+         )
+      end
+
+      -- draw grid labels
+      if zoom >= 1.0 and thisImageIndex == imageIndex then
+         local drawStr = ""
+         
+         if #value < maxColVals then
             for i = 0, 4 - #value do
-                drawStr = drawStr .. "\n"
+               drawStr = drawStr .. "\n"
             end
-        end
-
-        for key2,value2 in pairs(value) do
+         end
+         
+         for key2,value2 in pairs(value) do
             drawStr = drawStr .. "\n" .. value2
-        end
-        if colNum >= 1 then
-              if colNum % 5 == 0 or zoom < 1.0 then
-                 gfx.setDitherPattern(0.0,gfx.image.kDitherTypeHorizontalLine)
-              else
-                gfx.setDitherPattern(0.5,gfx.image.kDitherTypeHorizontalLine)
-              end
+         end
 
-               gfx.drawLine(offsetX + colNum * spacing - 1, offsetY, offsetX + colNum * spacing - 1, offsetY  + #puzzle.rowData[imageIndex] * spacing)
-        end
+         if cursorLocX == colNum then
+	         gfx.setDitherPattern(0.0, gfx.image.kDitherTypeVerticalLine)
+	         gfx.setColor(gfx.kColorBlack)
+	         gfx.fillRect(adjustedOffsetX + colNum * spacing, 0, spacing, adjustedOffsetY)
+	         gfx.setImageDrawMode(playdate.graphics.kDrawModeFillWhite)
+		      gfx.drawTextAligned(drawStr, adjustedOffsetX + colNum * spacing + 2, 10 + adjustedOffsetY - spacing*maxColVals, kTextAlignment.centered)
+	         gfx.setImageDrawMode(playdate.graphics.kDrawModeCopy)
 
-		if zoom >= 1.0 then
-
-        	if cursorLocX == colNum then
-            	gfx.setDitherPattern(0.0, gfx.image.kDitherTypeVerticalLine)
-            	gfx.setColor(gfx.kColorBlack)
-            	gfx.fillRect(offsetX + colNum * spacing, 0, spacing, offsetY)
-            	gfx.setImageDrawMode(playdate.graphics.kDrawModeFillWhite)
-             	gfx.drawTextAligned(drawStr, offsetX + colNum * spacing + 2, 10 + offsetY - spacing*maxColVals, kTextAlignment.centered)
-            	gfx.setImageDrawMode(playdate.graphics.kDrawModeCopy)
-	
-         	else
-             	gfx.drawTextAligned(drawStr, offsetX + colNum * spacing + 2, 10 + offsetY - spacing*maxColVals, kTextAlignment.centered)
-    
-         	end
+            else
+               gfx.drawTextAligned(drawStr, adjustedOffsetX + colNum * spacing + 2, 10 + adjustedOffsetY - spacing*maxColVals, kTextAlignment.centered)
+				end
 		end
 
-
-       colNum += 1
-    end
+ 		colNum += 1
+ 	end
 end
 
-function Game:drawPlayerImage()
-    local won = true
+function Game:drawPlayerImage(overrideImageIndex)
+	local thisImageIndex = overrideImageIndex and overrideImageIndex or imageIndex
+	local thisMatrix = matrices[thisImageIndex]
+	local thisImgMatrix = puzzle.imgmatrices[thisImageIndex]
+   local row = math.floor((thisImageIndex-1) / puzzle.dimensionWidth)
+   local column = math.floor((thisImageIndex-1) % puzzle.dimensionWidth)
+   local adjustedOffsetX = offsetX + (column * (puzzle.pieceWidth*spacing))
+   local adjustedOffsetY = offsetY + (row * (puzzle.pieceHeight*spacing))
 
-    for y= 0, #matrix
-    do
-        for x= 0, #matrix[y]
-        do
-            if imgmatrix[y][x] == 1 and matrix[y][x] ~= 1
-                or imgmatrix[y][x] == 0 and matrix[y][x] == 1 then
-                won = false
-            end
+	local matrixCompleted = true
 
-            if matrix[y][x] == 1 then
-                gfx.setDitherPattern(0.0,gfx.image.kDitherTypeDiagonalLine)
-                gfx.fillRect(offsetX + spacing*x, offsetY + spacing*y, spacing-1, spacing-1)
-            elseif matrix[y][x] == -1 and not puzzleComplete then
-                gfx.setDitherPattern(0.5,gfx.image.kDitherTypeDiagonalLine)
-                gfx.fillRect(offsetX + spacing*x, offsetY + spacing*y, spacing-1, spacing-1)
-            end
-        end
-    end
+ 	for y= 0, #thisMatrix
+ 	do
+  		for x= 0, #thisMatrix[y]
+  		do
+				if thisImgMatrix[y][x] == 1 and thisMatrix[y][x] ~= 1
+ 					or thisImgMatrix[y][x] == 0 and thisMatrix[y][x] == 1 then
+ 					matrixCompleted = false
+				end
 
-    gfx.setDitherPattern(0.0,gfx.image.kDitherTypeDiagonalLine)
+				if thisMatrix[y][x] == 1 then
+ 					gfx.setDitherPattern(0.0,gfx.image.kDitherTypeDiagonalLine)
+ 					gfx.fillRect(adjustedOffsetX + spacing*x, adjustedOffsetY + spacing*y, spacing-1, spacing-1)
+				elseif thisMatrix[y][x] == -1 and not puzzleComplete then
+ 					gfx.setDitherPattern(0.5,gfx.image.kDitherTypeDiagonalLine)
+ 					gfx.fillRect(adjustedOffsetX + spacing*x, adjustedOffsetY + spacing*y, spacing-1, spacing-1)
+				end
+  		end
+ 	end
 
-    if won and not puzzleComplete then
-        Game:win()
-    end
+ 	gfx.setDitherPattern(0.0,gfx.image.kDitherTypeDiagonalLine)
+
+   if matrixCompleted then 
+      matricesCompletionStatus[thisImageIndex] = 1
+   else 
+      matricesCompletionStatus[thisImageIndex] = 0
+   end
+
+   -- check win condition
+   local won = true
+   for i=1, #matricesCompletionStatus do 
+      if matricesCompletionStatus[i] == 0 then 
+         won = false
+      end
+   end 
+
+ 	if won and not puzzleComplete then
+  		Game:win()
+ 	end
 end
 
 function Game:drawCursor()
-   if matrix[cursorLocY][cursorLocX] == 1 then
-      gfx.setColor(gfx.kColorWhite)
-   else
-      gfx.setColor(gfx.kColorBlack)
-   end
-    gfx.setDitherPattern(0.5,gfx.image.kDitherTypeBayer2x2)
-    gfx.setLineWidth(4)
-    gfx.drawRect(offsetX + spacing*cursorLocX - 1, offsetY + spacing*cursorLocY - 1, spacing+1, spacing+1)
-    gfx.setLineWidth(1)
+   local thisImageIndex = imageIndex
+   local thisMatrix = matrices[thisImageIndex]   
+   local row = math.floor((thisImageIndex-1) / puzzle.dimensionWidth)
+   local column = math.floor((thisImageIndex-1) % puzzle.dimensionWidth)
+   local adjustedOffsetX = offsetX + (column * (puzzle.pieceWidth*spacing))
+   local adjustedOffsetY = offsetY + (row * (puzzle.pieceHeight*spacing))
 
+
+	if thisMatrix[cursorLocY][cursorLocX] == 1 then
+		gfx.setColor(gfx.kColorWhite)
+	else
+		gfx.setColor(gfx.kColorBlack)
+	end
+ 	gfx.setDitherPattern(0.5,gfx.image.kDitherTypeBayer2x2)
+ 	gfx.setLineWidth(4)
+ 	gfx.drawRect(adjustedOffsetX + spacing*cursorLocX - 1, adjustedOffsetY + spacing*cursorLocY - 1, spacing+1, spacing+1)
+ 	gfx.setLineWidth(1)
 end
 
 function Game:updateCursor()
-    newCellTarget = false
-    currTime = playdate.getCurrentTimeMilliseconds()
+ 	newCellTarget = false
+ 	currTime = playdate.getCurrentTimeMilliseconds()
+   local thisMatrix = matrices[imageIndex]   
 
-    if not playdate.buttonIsPressed(playdate.kButtonRight)
-       and not playdate.buttonIsPressed(playdate.kButtonDown)
-       and not playdate.buttonIsPressed(playdate.kButtonLeft)
-       and not playdate.buttonIsPressed(playdate.kButtonUp)
-       then
-        lastDirPressed = 0
-    end
+ 	if not playdate.buttonIsPressed(playdate.kButtonRight)
+ 		and not playdate.buttonIsPressed(playdate.kButtonDown)
+ 		and not playdate.buttonIsPressed(playdate.kButtonLeft)
+ 		and not playdate.buttonIsPressed(playdate.kButtonUp)
+ 		then
+  		lastDirPressed = 0
+ 	end
 
-    if playdate.buttonIsPressed(playdate.kButtonRight) and
-       currTime > dirPressRepeatTimestamp and lastDirPressed == playdate.kButtonRight or
-       playdate.buttonJustPressed(playdate.kButtonRight) then
-        newCellTarget = true
-        lastDirPressed = playdate.kButtonRight
-        if playdate.buttonJustPressed(playdate.kButtonRight) then
-            dirPressRepeatTimestamp = currTime + dirPressTimeTillRepeat
-        else
-            dirPressRepeatTimestamp = currTime + dirPressRepeatTime
-        end
-        cursorLocX += 1
-    elseif playdate.buttonIsPressed(playdate.kButtonLeft) and currTime > dirPressRepeatTimestamp and lastDirPressed == playdate.kButtonLeft or playdate.buttonJustPressed(playdate.kButtonLeft) then
-        newCellTarget = true
-        lastDirPressed = playdate.kButtonLeft
-        if playdate.buttonJustPressed(playdate.kButtonLeft) then
-            dirPressRepeatTimestamp = currTime + dirPressTimeTillRepeat
-        else
-            dirPressRepeatTimestamp = currTime + dirPressRepeatTime
-        end
-        cursorLocX -= 1
-    elseif playdate.buttonIsPressed(playdate.kButtonUp) and currTime > dirPressRepeatTimestamp and lastDirPressed == playdate.kButtonUp or playdate.buttonJustPressed(playdate.kButtonUp) then
-        newCellTarget = true
-        lastDirPressed = playdate.kButtonUp
-        if playdate.buttonJustPressed(playdate.kButtonUp) then
-            dirPressRepeatTimestamp = currTime + dirPressTimeTillRepeat
-        else
-            dirPressRepeatTimestamp = currTime + dirPressRepeatTime
-        end
-        cursorLocY -= 1
-    elseif playdate.buttonIsPressed(playdate.kButtonDown) and currTime > dirPressRepeatTimestamp and lastDirPressed == playdate.kButtonDown or playdate.buttonJustPressed(playdate.kButtonDown) then
-        newCellTarget = true
-        lastDirPressed = playdate.kButtonDown
-        if playdate.buttonJustPressed(playdate.kButtonDown) then
-            dirPressRepeatTimestamp = currTime + dirPressTimeTillRepeat
-        else
-            dirPressRepeatTimestamp = currTime + dirPressRepeatTime
-        end
-        cursorLocY += 1
-    end
+ 	if playdate.buttonIsPressed(playdate.kButtonRight) and
+ 		currTime > dirPressRepeatTimestamp and lastDirPressed == playdate.kButtonRight or
+ 		playdate.buttonJustPressed(playdate.kButtonRight) then
+  		newCellTarget = true
+  		lastDirPressed = playdate.kButtonRight
+  		if playdate.buttonJustPressed(playdate.kButtonRight) then
+				dirPressRepeatTimestamp = currTime + dirPressTimeTillRepeat
+  		else
+				dirPressRepeatTimestamp = currTime + dirPressRepeatTime
+  		end
+  		cursorLocX += 1
+ 	elseif playdate.buttonIsPressed(playdate.kButtonLeft) and currTime > dirPressRepeatTimestamp and lastDirPressed == playdate.kButtonLeft or playdate.buttonJustPressed(playdate.kButtonLeft) then
+  		newCellTarget = true
+  		lastDirPressed = playdate.kButtonLeft
+  		if playdate.buttonJustPressed(playdate.kButtonLeft) then
+				dirPressRepeatTimestamp = currTime + dirPressTimeTillRepeat
+  		else
+				dirPressRepeatTimestamp = currTime + dirPressRepeatTime
+  		end
+  		cursorLocX -= 1
+ 	elseif playdate.buttonIsPressed(playdate.kButtonUp) and currTime > dirPressRepeatTimestamp and lastDirPressed == playdate.kButtonUp or playdate.buttonJustPressed(playdate.kButtonUp) then
+  		newCellTarget = true
+  		lastDirPressed = playdate.kButtonUp
+  		if playdate.buttonJustPressed(playdate.kButtonUp) then
+				dirPressRepeatTimestamp = currTime + dirPressTimeTillRepeat
+  		else
+				dirPressRepeatTimestamp = currTime + dirPressRepeatTime
+  		end
+  		cursorLocY -= 1
+ 	elseif playdate.buttonIsPressed(playdate.kButtonDown) and currTime > dirPressRepeatTimestamp and lastDirPressed == playdate.kButtonDown or playdate.buttonJustPressed(playdate.kButtonDown) then
+  		newCellTarget = true
+  		lastDirPressed = playdate.kButtonDown
+  		if playdate.buttonJustPressed(playdate.kButtonDown) then
+				dirPressRepeatTimestamp = currTime + dirPressTimeTillRepeat
+  		else
+				dirPressRepeatTimestamp = currTime + dirPressRepeatTime
+  		end
+  		cursorLocY += 1
+ 	end
 
-    if cursorLocX >= #puzzle.colData[imageIndex] then
-        cursorLocX = 0
-    elseif cursorLocX < 0 then
-        cursorLocX = #puzzle.colData[imageIndex] - 1
-    end
+ 	if cursorLocX >= #puzzle.colData[imageIndex] then
+  		cursorLocX = 0
+ 	elseif cursorLocX < 0 then
+  		cursorLocX = #puzzle.colData[imageIndex] - 1
+ 	end
 
-    if cursorLocY >= #puzzle.rowData[imageIndex] then
-        cursorLocY = 0
-    elseif cursorLocY < 0 then
-        cursorLocY = #puzzle.rowData[imageIndex] - 1
-    end
+ 	if cursorLocY >= #puzzle.rowData[imageIndex] then
+  		cursorLocY = 0
+ 	elseif cursorLocY < 0 then
+  		cursorLocY = #puzzle.rowData[imageIndex] - 1
+ 	end
 
-    if playdate.buttonJustPressed(playdate.kButtonA) then
-        newCellTarget = true
-        setContinue = 0
+ 	if playdate.buttonJustPressed(playdate.kButtonA) then
+  		newCellTarget = true
+  		setContinue = 0
 
-        if matrix[cursorLocY][cursorLocX] ~= 1 then
-            setVal = 1
-        else
-            setVal = 0
-        end
-    elseif playdate.buttonJustPressed(playdate.kButtonB) then
-        newCellTarget = true
+  		if thisMatrix[cursorLocY][cursorLocX] ~= 1 then
+				setVal = 1
+  		else
+				setVal = 0
+  		end
+ 	elseif playdate.buttonJustPressed(playdate.kButtonB) then
+  		newCellTarget = true
 
-        if matrix[cursorLocY][cursorLocX] ~= -1 then
-            setVal = -1
-        else
-            setVal = 0
-        end
-    end
+  		if thisMatrix[cursorLocY][cursorLocX] ~= -1 then
+				setVal = -1
+  		else
+				setVal = 0
+  		end
+ 	end
 
-    if (playdate.buttonIsPressed(playdate.kButtonA) or playdate.buttonIsPressed(playdate.kButtonB)) and newCellTarget then
-       matrix[cursorLocY][cursorLocX] = setVal
-       if setVal == 1 then
+ 	if (playdate.buttonIsPressed(playdate.kButtonA) or playdate.buttonIsPressed(playdate.kButtonB)) and newCellTarget then
+ 		thisMatrix[cursorLocY][cursorLocX] = setVal
+ 		if setVal == 1 then
 
-              synth:playNote(60+setContinue*20, 1, 0.033)
-           setContinue += 1
-       elseif setVal == -1 then
-            noiseSynth:playNote(60, 0.5, 0.016)
-       end
-    end
+  				synth:playNote(60+setContinue*20, 1, 0.033)
+  			setContinue += 1
+ 		elseif setVal == -1 then
+				noiseSynth:playNote(60, 0.5, 0.016)
+ 		end
+ 	end
 end
 
 function Game:win()
-    local puzzleId = puzzleData['id']
-    local clearTime = playdate.getCurrentTimeMilliseconds() - initTimestamp
-    savePuzzleClear(puzzleId, clearTime)
-    puzzleFinishTimestamp = playdate.getCurrentTimeMilliseconds()
-    puzzleComplete = true
+ 	local puzzleId = puzzleData['id']
+ 	local clearTime = playdate.getCurrentTimeMilliseconds() - initTimestamp
+ 	savePuzzleClear(puzzleId, clearTime)
+ 	puzzleFinishTimestamp = playdate.getCurrentTimeMilliseconds()
+ 	puzzleComplete = true
 end
 
 function Game:drawTime()
-    gfx.setFont(gridFontNoKearning)
+ 	gfx.setFont(gridFontNoKearning)
 
-    gfx.drawTextAligned(timeToString(playdate.getCurrentTimeMilliseconds() - initTimestamp), 100, 20, kTextAlignment.right)
+ 	gfx.drawTextAligned(timeToString(playdate.getCurrentTimeMilliseconds() - initTimestamp), 100, 20, kTextAlignment.right)
 end
 
 function Game:drawPuzzleComplete()
-    gfx.setFont(blockyFont)
-    gfx.setDitherPattern(0.0,gfx.image.kDitherTypeVerticalLine)
-    gfx.drawTextAligned("COMPLETED IN " .. getClearTimeString(puzzleData['id']), 200, screenHeight - (screenHeight-spacing*#puzzle.rowData[imageIndex])/2.0 + 20, kTextAlignment.center)
+ 	gfx.setFont(blockyFont)
+ 	gfx.setDitherPattern(0.0,gfx.image.kDitherTypeVerticalLine)
+ 	gfx.drawTextAligned("COMPLETED IN " .. getClearTimeString(puzzleData['id']), 200, screenHeight - (screenHeight-spacing*#puzzle.rowData[imageIndex])/2.0 + 20, kTextAlignment.center)
 end
 
 function Game:debugCompletePuzzle()
-    for y= 0, #imgmatrix
-    do
-        for x= 0, #imgmatrix[y]
-        do
-            matrix[y][x] = imgmatrix[y][x]
-
-        end
-    end
+   for y = 0, #imgmatrix do
+      for x = 0, #imgmatrix[y] do
+         matrix[y][x] = imgmatrix[y][x]
+      end
+   end
 end
 
 function Game:checkCrank()
-    local crankPos = playdate.getCrankPosition()
-    if crankPos > 240.0 then
-        crankPos = 0.0
-    end
+   local crankPos = playdate.getCrankPosition()
+   
+   local crankRangeUpper = 330.0
+   local crankRangeLower = 220.0
+   local backDeadZone = 150.0
 
-    crankPos = math.max(0.0,math.min(crankPos,180.0))
+  if crankPos < backDeadZone then 
+      crankPos = crankRangeUpper
+  elseif crankPos > crankRangeUpper then 
+     crankPos = crankRangeUpper
+  elseif crankPos < crankRangeLower then 
+    crankPos = crankRangeLower
+  end 
+   
+   crankPos = math.max(0.0, math.min(1.0 - (crankRangeUpper - crankPos)/(crankRangeUpper- crankRangeLower),1.0))
+
+  zoom = crankPos
+
+   local row = math.floor((imageIndex-1) / puzzle.dimensionWidth)
+  local column = math.floor((imageIndex-1) % puzzle.dimensionWidth)
+
+   targetDrawOffsetX = -1 * (column) * puzzle.pieceWidth*spacing
+   targetDrawOffsetY = -1 * (row) * puzzle.pieceHeight*spacing
 
 
-    zoom = 1.0 - crankPos/180.0
+  local drawOffsetX, drawOffsetY = gfx.getDrawOffset()
+  drawOffsetX = playdate.math.lerp(drawOffsetX, targetDrawOffsetX, 0.5)
+  drawOffsetY = playdate.math.lerp(drawOffsetY, targetDrawOffsetY, 0.5)
+  -- if math.abs(targetDrawOffsetX - drawOffsetX) <= 0.12 * (targetDrawOffsetX - drawOffsetX) then 
+  --     drawOffsetX = targetDrawOffsetX
+  -- else 
+  --     drawOffsetX = drawOffsetX + (targetDrawOffsetX - drawOffsetX) * 0.1
+  -- end
+  -- 
+  -- if math.abs(targetDrawOffsetY - drawOffsetY) <= 0.12 * (targetDrawOffsetY - drawOffsetY) then 
+  --       drawOffsetY = targetDrawOffsetY
+  --   else 
+  --       drawOffsetY = drawOffsetY + (targetDrawOffsetY - drawOffsetY) * 0.1
+  --   end
+    
+   gfx.setDrawOffset(drawOffsetX,drawOffsetY)
 
-    offsetX = playdate.math.lerp(kDefaultOffsetX, kZoomOutOffsetX, 1.0 - zoom)
-    offsetY = playdate.math.lerp(kDefaultOffsetY, kZoomOutOffsetY, 1.0 - zoom)
-    spacing = math.ceil(playdate.math.lerp(kDefaultSpacing, kZoomOutSpacing, 1.0 -zoom))
+  
+   if self:isOnRightHandSide() then 
+      offsetX = playdate.math.lerp(kRightHandOffsetX, kZoomOutOffsetX, 1.0 - zoom)
+   else 
+      offsetX = playdate.math.lerp(kLeftHandOffsetX, kZoomOutOffsetX, 1.0 - zoom)
+   end 
+   offsetY = playdate.math.lerp(kDefaultOffsetY, kZoomOutOffsetY, 1.0 - zoom)
+   spacing = playdate.math.lerp(kDefaultSpacing, kZoomOutSpacing, 1.0 -zoom)
 end
 
+function Game:updateZoomOut()
+
+end
+
+function Game:updateBoardCursor()
+   local thisImageIndex = imageIndex
+   local row = math.floor((thisImageIndex-1) / puzzle.dimensionWidth) + 1
+   local column = math.floor((thisImageIndex-1) % puzzle.dimensionWidth) + 1 
+
+   if playdate.buttonJustPressed(playdate.kButtonRight) then 
+      if column < puzzle.dimensionWidth then 
+         column += 1
+      end 
+   end 
+
+   if playdate.buttonJustPressed(playdate.kButtonLeft) then 
+      if column > 1 then 
+         column -= 1
+      end      
+   end 
+
+   if playdate.buttonJustPressed(playdate.kButtonUp) then 
+      if row > 1 then 
+         row -= 1
+      end
+   end 
+
+   if playdate.buttonJustPressed(playdate.kButtonDown) then 
+      if row < puzzle.dimensionHeight then 
+         row += 1
+      end 
+   end
+
+   local newImageIndex = (row - 1) * puzzle.dimensionWidth + column 
+   
+   if newImageIndex ~= imageIndex then 
+      imageIndex = newImageIndex
+      imageIndexChangedTimestamp = playdate.getCurrentTimeMilliseconds()
+   end
+end 
+
+function Game:drawBoardCursor() 
+   gfx.setColor(gfx.kColorBlack)
+   gfx.setDitherPattern(0.5,gfx.image.kDitherTypeBayer2x2)
+   gfx.setLineWidth(8)
+
+   local thisImageIndex = imageIndex
+   local row = math.floor((thisImageIndex-1) / puzzle.dimensionWidth)
+   local column = math.floor((thisImageIndex-1) % puzzle.dimensionWidth)
+   local adjustedOffsetX = offsetX + (column * (puzzle.pieceWidth*spacing))
+   local adjustedOffsetY = offsetY + (row * (puzzle.pieceHeight*spacing))
+
+   gfx.drawRect(adjustedOffsetX, adjustedOffsetY, puzzle.pieceWidth*spacing, puzzle.pieceHeight*spacing)
+   gfx.setLineWidth(1)
+end 
+
+
 function Game:update()
-    if initialized and playdate.getCurrentTimeMilliseconds() - initTimestamp > 100 then
-        gfx.clear()
+   if initialized and playdate.getCurrentTimeMilliseconds() - initTimestamp > 100 then
+      gfx.clear()
 
-        if not puzzleComplete then
-            self:checkCrank()
-            self:drawGrid()
-            
-			if zoom >= 1.0 then 
-				self:updateCursor()
-            	self:drawCursor()
-			end
-            self:drawTime()
-        end
+      if not puzzleComplete then
+         self:checkCrank()
+         
+         for i = 1, #matrices do 
+            self:drawGrid(i)
+         end
 
-        if puzzleComplete then
-            offsetX = playdate.math.lerp(offsetX, (screenWidth - spacing*#puzzle.colData[imageIndex])/2.0, math.min(1.0,(playdate.getCurrentTimeMilliseconds() - puzzleFinishTimestamp)/1000.0))
-            offsetY = playdate.math.lerp(offsetY,  (screenHeight - spacing*#puzzle.rowData[imageIndex])/2.0, math.min(1.0, (playdate.getCurrentTimeMilliseconds() - puzzleFinishTimestamp)/1000.0))
+         if zoom >= 1.0 then
+            self:updateCursor()
+            self:drawCursor()
+         else
+            self:updateBoardCursor()
+            self:drawBoardCursor()
+			   self:updateZoomOut()
+		   end
 
-            self:drawPuzzleComplete()
-            if playdate.buttonJustPressed(playdate.kButtonA) and playdate.getCurrentTimeMilliseconds() - puzzleFinishTimestamp > 100 then
-                goLevelSelect()
-            end
-        end
+         self:drawTime()
+      else -- puzzle complete
+         offsetX = playdate.math.lerp(offsetX, (screenWidth - spacing*#puzzle.colData[imageIndex])/2.0, math.min(1.0,(playdate.getCurrentTimeMilliseconds() - puzzleFinishTimestamp)/1000.0))
+         offsetY = playdate.math.lerp(offsetY,  (screenHeight - spacing*#puzzle.rowData[imageIndex])/2.0, math.min(1.0, (playdate.getCurrentTimeMilliseconds() - puzzleFinishTimestamp)/1000.0))
 
-        self:drawPlayerImage()
-    end
+         self:drawPuzzleComplete()
+
+         if playdate.buttonJustPressed(playdate.kButtonA) and playdate.getCurrentTimeMilliseconds() - puzzleFinishTimestamp > 100 then
+            goLevelSelect()
+         end
+      end
+
+      for i = 1, #matrices do 
+         self:drawPlayerImage(i)
+      end
+ 	end
 end
 
 

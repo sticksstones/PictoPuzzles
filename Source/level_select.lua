@@ -106,7 +106,7 @@ function LevelSelect:update()
 	if playdate.buttonJustPressed(playdate.kButtonUp) then 
 		gridview:selectPreviousRow(false)
 		local section, row, column = gridview:getSelection()
-		if (row - 1) * column + column > #levelData['puzzles']['categories'][section]['puzzles'] then 
+		if (row - 1) * gridview:getNumberOfColumns() + column > #levelData['puzzles']['categories'][section]['puzzles'] then 
 			gridview:setSelection(section,row,1)
 			gridview:scrollCellToCenter(section,row,1,true)
 		end
@@ -116,7 +116,7 @@ function LevelSelect:update()
 	if playdate.buttonJustPressed(playdate.kButtonDown) then 
 		gridview:selectNextRow(false)
 		local section, row, column = gridview:getSelection()
-		if (row - 1) * column + column > #levelData['puzzles']['categories'][section]['puzzles'] then 
+		if (row - 1) * gridview:getNumberOfColumns() + column > #levelData['puzzles']['categories'][section]['puzzles'] then 
 			gridview:setSelection(section,row,1)
 			gridview:scrollCellToCenter(section,row,1,true)
 		end
@@ -128,7 +128,7 @@ function LevelSelect:update()
 
 	if playdate.buttonJustPressed(playdate.kButtonRight) then 
 		local section, row, column = gridview:getSelection()
-		if (row - 1) * column + column < #levelData['puzzles']['categories'][section]['puzzles'] then 				
+		if (row - 1) * gridview:getNumberOfColumns() + column < #levelData['puzzles']['categories'][section]['puzzles'] then 				
 			gridview:selectNextColumn(false)
 		end
 	end 
@@ -160,7 +160,7 @@ function getPuzzle(section, row, column)
 	end 
 	
 	if cachedPuzzles[section][row][column] == nil then 
-		puzzleData = levelData['puzzles']['categories'][section]['puzzles'][(row-1)*column + column]				
+		puzzleData = levelData['puzzles']['categories'][section]['puzzles'][(row-1)*gridview:getNumberOfColumns() + column]				
 		local puzzle = Puzzle(puzzleData)
 		cachedPuzzles[section][row][column] = puzzle
 	end 
@@ -169,7 +169,7 @@ function getPuzzle(section, row, column)
 end 
 
 function gridview:drawCell(section, row, column, selected, x, y, width, height)
-	if (row - 1) * column + column <= #levelData['puzzles']['categories'][section]['puzzles'] then 
+	if (row - 1) * gridview:getNumberOfColumns() + column <= #levelData['puzzles']['categories'][section]['puzzles'] then 
 		
 		local puzzle = getPuzzle(section,row,column)
 		local heightRatio = puzzle.totalWidth / puzzle.totalHeight	

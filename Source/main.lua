@@ -44,6 +44,7 @@ function setState(newState)
       gameState = newState
       osMenu:removeAllMenuItems()   
    end
+  playdate.graphics.setDrawOffset(0,0)
 end 
 
 function goMainMenu() 
