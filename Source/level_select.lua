@@ -136,8 +136,8 @@ function LevelSelect:update()
 	if playdate.buttonJustPressed(playdate.kButtonA) then 
 		local section,row,column = gridview:getSelection()
 		active = false
-		puzzleData = levelData['puzzles']['categories'][section]['puzzles'][(row-1)*column + column]
-		goLoadLevel(puzzleData)
+		local puzzle = getPuzzle(section,row,column)		
+		goLoadLevel(puzzle)
 	end 
 
 	if playdate.buttonJustPressed(playdate.kButtonB) then 
@@ -195,7 +195,7 @@ function gridview:drawCell(section, row, column, selected, x, y, width, height)
 			height*borderScale
 		)
 
-		if true then--isPuzzleCleared(puzzle.puzzleData['id']) then 
+		if isPuzzleCleared(puzzle.puzzleData['id']) then 
 			gfx.setDitherPattern(0.0,gfx.image.kDitherTypeVerticalLine)
 			puzzle:drawImage(adjustedXPos + margin*width, adjustedYPos + margin*height, constrainedDimension)
 		else 				

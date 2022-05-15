@@ -58,9 +58,9 @@ function goLevelSelect(resetState)
    end 
 end 
 
-function goLoadLevel(puzzleData)
+function goLoadLevel(puzzle)
    setState(kGameStatePlaying)
-   game:loadPuzzle(puzzleData)
+   game:loadPuzzle(puzzle)
    local menuItem, error = osMenu:addMenuItem("[DEBUG] Finish", function() debugCompletePuzzle() end)
    local menuItem2, error2 = osMenu:addMenuItem("Leave Puzzle", function() exitPuzzle() end)
    
