@@ -19,25 +19,31 @@ function Puzzle:init(puzzleData)
 	self.pieceHeight = 0
 	self.pieceWidth = 0
 	self.puzzleData = puzzleData
+	self.imgmatrices = nil
 	self:loadPuzzle(self.puzzleData)
 end
 
 function Puzzle:loadImage(img)
   
+  local imgmatrix = table.create(img.height,0)  
   local thisRowData = table.create(img.height,0)
+  
    -- get row data
    for y= 0, img.height-1
    do
+	   imgmatrix[y] = table.create(img.width,0)
 	   local rowIndex = y+1
 	   local rowCount = 0
 	   thisRowData[rowIndex] = table.create(img.width,0)
-	   for x= 0, img.width-1
-	   do
+	   for x= 0, img.width-1 do
+		   
 		   local sample = img:sample(x,y)
 		   
 		   if sample == gfx.kColorBlack then
+			   imgmatrix[y][x] = 1
 			   rowCount+= 1  
 		   else
+			   imgmatrix[y][x] = 0
 			   if rowCount > 0 then 
 				   table.insert(thisRowData[rowIndex],rowCount)
 				   rowCount = 0    
@@ -92,9 +98,12 @@ function Puzzle:loadImage(img)
    self.pieceHeight = #thisRowData
    table.insert(self.rowData, thisRowData)
    table.insert(self.colData, thisColData)
+   table.insert(self.imgmatrices, imgmatrix)
 end 
 
 function Puzzle:loadPuzzle(puzzleData)
+	self.imgmatrices = table.create(#self.puzzleData['images'],0)
+	
 	for i=1, #self.puzzleData['images'] do 
 		local img = gfx.image.new('assets/puzzles/images/' .. self.puzzleData['images'][i])  
 		self:loadImage(img)
@@ -117,24 +126,21 @@ function Puzzle:drawImage(posx, posy, width)
 	
 	local pixelsize = self:getPixelSizeForWidth(width)
 
-	for i=1, #self.puzzleData['images'] do 
-		local img = gfx.image.new('assets/puzzles/images/' .. self.puzzleData['images'][i]) 		
+	for i=1, #self.imgmatrices do 
+		local imgmatrix = self.imgmatrices[i]
 		local row = math.floor((i-1) / self.dimensionWidth)
 		local column = math.floor((i-1) % self.dimensionWidth)
 
-		for y= 0, img.height-1
-		do
-			for x= 0, img.width-1
-			do
-				local sample = img:sample(x,y)
-				if sample == gfx.kColorBlack then												
+		for y=0, #imgmatrix do 
+			for x=0, #imgmatrix[y] do
+				if imgmatrix[y][x] == 1 then 
 					gfx.fillRect(
-						posx + (column * img.width*pixelsize) + pixelsize*x, 
-						posy + (row * img.height*pixelsize) + pixelsize*y, 
+						posx + (column * (#imgmatrix[y]+1)*pixelsize) + pixelsize*x, 
+						posy + (row * (#imgmatrix+1)*pixelsize) + pixelsize*y, 
 						pixelsize-1, pixelsize-1
-					)
-				end 
-			end
-		end
-	end
+					)					
+				end 	
+			end 
+		end 		
+	end 
 end

@@ -195,7 +195,7 @@ function gridview:drawCell(section, row, column, selected, x, y, width, height)
 			height*borderScale
 		)
 
-		if isPuzzleCleared(puzzle.puzzleData['id']) then 
+		if true then--isPuzzleCleared(puzzle.puzzleData['id']) then 
 			gfx.setDitherPattern(0.0,gfx.image.kDitherTypeVerticalLine)
 			puzzle:drawImage(adjustedXPos + margin*width, adjustedYPos + margin*height, constrainedDimension)
 		else 				
@@ -209,7 +209,6 @@ end
 
 
 function gridview:drawSectionHeader(section, x, y, width, height)
-	-- drawBlockText(levelData['puzzles']['categories'][section]["id"], x+7, y+6, 3)
 	gfx.drawText(string.upper(levelData['puzzles']['categories'][section]["id"]), x + 10, y + 8)
 end
 
