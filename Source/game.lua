@@ -1,6 +1,8 @@
 import "CoreLibs/graphics"
 import "CoreLibs/math"
 import "CoreLibs/object"
+import "CoreLibs/easing"
+import "CoreLibs/animator"
 import 'puzzle'
 import 'save_funcs'
 import 'funcs'
@@ -25,7 +27,8 @@ local cursorLocY = 0
 local kDefaultSpacing <const> = 16
 local kLeftHandOffsetX <const> = 128
 local kRightHandOffsetX <const> = 64
-local kDefaultOffsetY <const> = 72
+local kUpOffsetY <const> = 72
+local kDownOffsetY <const> = 0
 
 local kZoomOutSpacing <const> = 8
 local kZoomOutOffsetX <const> = 64
@@ -54,6 +57,8 @@ local puzzleFinishTimestamp = 0.0
 local imageIndexChangedTimestamp = 0.0
 local targetDrawOffsetX = 0.0
 local targetDrawOffsetY = 0.0
+
+local completedTextHeight = 220.0
 
 local initialized = false
 local gridFont <const> = gfx.font.new('assets/Picross-Small')
@@ -100,7 +105,7 @@ function Game:loadPuzzle(puzzleSelected)
 
 	puzzleFinishTimestamp = 0.0
 	offsetX = kLeftHandOffsetX
-	offsetY = kDefaultOffsetY
+	offsetY = kUpOffsetY
 	spacing = kDefaultSpacing
 
    imageIndex = 1
@@ -113,6 +118,13 @@ function Game:isOnRightHandSide()
    local column = math.floor((thisImageIndex-1) % puzzle.dimensionWidth)
 
    return (column > 0 and column + 1 == puzzle.dimensionWidth)
+end 
+
+function Game:isOnLowerSide()
+   local thisImageIndex = imageIndex
+   local row = math.floor((thisImageIndex-1) / puzzle.dimensionWidth)
+
+   return (row > 0 and row + 1 == puzzle.dimensionHeight)
 end 
 
 function Game:drawGrid(overrideImageIndex)
@@ -239,26 +251,44 @@ function Game:drawGrid(overrideImageIndex)
       if zoom >= 1.0 and thisImageIndex == imageIndex then
          local drawStr = ""
          
-         if #value < maxColVals then
-            for i = 0, 4 - #value do
+         local horizExtraOffset = 2
+         
+         if #value < maxColVals and not self:isOnLowerSide() then
+            for i = 0, 4 - #value do               
                drawStr = drawStr .. "\n"
             end
          end
          
          for key2,value2 in pairs(value) do
+            if value2 > 9 then 
+              horizExtraOffset = 0
+            end
             drawStr = drawStr .. "\n" .. value2
          end
 
-         if cursorLocX == colNum then
+
+        if cursorLocX == colNum then
 	         gfx.setDitherPattern(0.0, gfx.image.kDitherTypeVerticalLine)
 	         gfx.setColor(gfx.kColorBlack)
-	         gfx.fillRect(adjustedOffsetX + colNum * spacing, 0, spacing, adjustedOffsetY)
-	         gfx.setImageDrawMode(playdate.graphics.kDrawModeFillWhite)
-		      gfx.drawTextAligned(drawStr, adjustedOffsetX + colNum * spacing + 2, 10 + adjustedOffsetY - spacing*maxColVals, kTextAlignment.centered)
-	         gfx.setImageDrawMode(playdate.graphics.kDrawModeCopy)
+           if self:isOnLowerSide() then 
+              gfx.fillRect(adjustedOffsetX + colNum * spacing, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing, spacing, 999)
+              gfx.setImageDrawMode(playdate.graphics.kDrawModeFillWhite)
+               gfx.drawTextAligned(drawStr, adjustedOffsetX + colNum * spacing + horizExtraOffset, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing - 5, kTextAlignment.centered)
+              gfx.setImageDrawMode(playdate.graphics.kDrawModeCopy)
+           else 
+	            gfx.fillRect(adjustedOffsetX + colNum * spacing, 0, spacing, adjustedOffsetY)
+              gfx.setImageDrawMode(playdate.graphics.kDrawModeFillWhite)
+              gfx.drawTextAligned(drawStr, adjustedOffsetX + colNum * spacing + horizExtraOffset, 10 + adjustedOffsetY - spacing*maxColVals, kTextAlignment.centered)
+              gfx.setImageDrawMode(playdate.graphics.kDrawModeCopy)   
+          end 
 
-            else
-               gfx.drawTextAligned(drawStr, adjustedOffsetX + colNum * spacing + 2, 10 + adjustedOffsetY - spacing*maxColVals, kTextAlignment.centered)
+        else
+          if self:isOnLowerSide() then 
+               gfx.drawTextAligned(drawStr, adjustedOffsetX + colNum * spacing + horizExtraOffset, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing - 5, kTextAlignment.centered)
+          else 
+            gfx.drawTextAligned(drawStr, adjustedOffsetX + colNum * spacing + horizExtraOffset, 10 + adjustedOffsetY - spacing*maxColVals, kTextAlignment.centered)
+
+          end 
 				end
 		end
 
@@ -286,13 +316,25 @@ function Game:drawPlayerImage(overrideImageIndex)
  					matrixCompleted = false
 				end
 
-				if thisMatrix[y][x] == 1 then
- 					gfx.setDitherPattern(0.0,gfx.image.kDitherTypeDiagonalLine)
- 					gfx.fillRect(adjustedOffsetX + spacing*x, adjustedOffsetY + spacing*y, spacing-1, spacing-1)
-				elseif thisMatrix[y][x] == -1 and not puzzleComplete then
- 					gfx.setDitherPattern(0.5,gfx.image.kDitherTypeDiagonalLine)
- 					gfx.fillRect(adjustedOffsetX + spacing*x, adjustedOffsetY + spacing*y, spacing-1, spacing-1)
-				end
+        if thisImageIndex == imageIndex or puzzleComplete then 
+				  if thisMatrix[y][x] == 1 then
+ 					  gfx.setDitherPattern(0.0,gfx.image.kDitherTypeDiagonalLine)
+ 					  gfx.fillRect(adjustedOffsetX + spacing*x, adjustedOffsetY + spacing*y, spacing-1, spacing-1)
+				  elseif thisMatrix[y][x] == -1 and not puzzleComplete then
+ 					  gfx.setDitherPattern(0.5,gfx.image.kDitherTypeDiagonalLine)
+ 					  gfx.fillRect(adjustedOffsetX + spacing*x, adjustedOffsetY + spacing*y, spacing-1, spacing-1)
+				  end
+        else 
+          if thisMatrix[y][x] == 1 then
+           gfx.setDitherPattern(0.5,gfx.image.kDitherTypeBayer8x8)
+           gfx.fillRect(adjustedOffsetX + spacing*x, adjustedOffsetY + spacing*y, spacing-1, spacing-1)
+        elseif thisMatrix[y][x] == -1 and not puzzleComplete then
+           -- gfx.setDitherPattern(0.75,gfx.image.kDitherTypeBayer2x2)
+           gfx.setDitherPattern(0.75,gfx.image.kDitherTypeDiagonalLine)
+           gfx.fillRect(adjustedOffsetX + spacing*x, adjustedOffsetY + spacing*y, spacing-1, spacing-1)
+        end
+
+        end 
   		end
  	end
 
@@ -326,15 +368,44 @@ function Game:drawCursor()
    local adjustedOffsetY = offsetY + (row * (puzzle.pieceHeight*spacing))
 
 
-	if thisMatrix[cursorLocY][cursorLocX] == 1 then
-		gfx.setColor(gfx.kColorWhite)
-	else
-		gfx.setColor(gfx.kColorBlack)
-	end
- 	gfx.setDitherPattern(0.5,gfx.image.kDitherTypeBayer2x2)
- 	gfx.setLineWidth(4)
- 	gfx.drawRect(adjustedOffsetX + spacing*cursorLocX - 1, adjustedOffsetY + spacing*cursorLocY - 1, spacing+1, spacing+1)
- 	gfx.setLineWidth(1)
+	-- if thisMatrix[cursorLocY][cursorLocX] == 1 or thisMatrix[cursorLocY][cursorLocX] == -1
+  --  then
+	-- 	gfx.setColor(gfx.kColorWhite)
+	-- else
+	-- 	gfx.setColor(gfx.kColorBlack)
+	-- end
+ 	-- gfx.setDitherPattern(0.25,gfx.image.kDitherTypeBayer2x2)
+ 	-- gfx.setLineWidth(3)
+ 	-- gfx.drawRect(adjustedOffsetX + spacing*cursorLocX - 1, adjustedOffsetY + spacing*cursorLocY - 1, spacing+1, spacing+1)
+   gfx.setLineWidth(1)
+   gfx.setDitherPattern(0.0,gfx.image.kDitherTypeBayer2x2)
+  if thisMatrix[cursorLocY][cursorLocX] == 1 or thisMatrix[cursorLocY][cursorLocX] == -1
+    then
+     gfx.setColor(gfx.kColorWhite)
+   else
+     gfx.setColor(gfx.kColorBlack)
+   end
+   gfx.setColor(gfx.kColorXOR)
+   -- local radius = 1*(math.sin(playdate.getCurrentTimeMilliseconds()/1000.0*4)+2) + 2
+   local t = playdate.getCurrentTimeMilliseconds()/1000.0
+   local loopDuration = t % 2.0
+   local radius = 1.0
+   if loopDuration > 1.0 then 
+     loopDuration -= 1.0
+    loopDuration = 1.0 - loopDuration
+  end 
+   --   radius = playdate.easingFunctions.inOutElastic(loopDuration, 6.0, 3.0, 1.0)
+   --   print("Loop back: " .. loopDuration .. " radius: " .. radius)
+   -- else
+     radius = playdate.easingFunctions.inOutElastic(loopDuration, 3.0, 6.0, 2.0)
+     -- print("Loop: " .. loopDuration .. " radius: " .. radius)
+   -- end 
+   
+   gfx.drawCircleAtPoint(adjustedOffsetX + spacing*cursorLocX + spacing*0.5 , adjustedOffsetY + spacing*cursorLocY + spacing*0.5, radius )
+  
+  -- gfx.drawCircleInRect(adjustedOffsetX + spacing*cursorLocX - 1 + spacing*0.45, adjustedOffsetY + spacing*cursorLocY - 1 + spacing*0.45, spacing*0.05, spacing*0.05)
+  gfx.setColor(gfx.kColorBlack)
+
 end
 
 function Game:updateCursor()
@@ -450,15 +521,19 @@ end
 function Game:drawPuzzleComplete()
  	gfx.setFont(blockyFont)
  	gfx.setDitherPattern(0.0,gfx.image.kDitherTypeVerticalLine)
- 	gfx.drawTextAligned("COMPLETED IN " .. getClearTimeString(puzzleData['id']), 200, screenHeight - (screenHeight-spacing*#puzzle.rowData[imageIndex])/2.0 + 20, kTextAlignment.center)
+ 	gfx.drawTextAligned("COMPLETED IN " .. getClearTimeString(puzzleData['id']), 0.5*screenWidth, screenHeight - (screenHeight-spacing*puzzle.totalHeight)/2.0, kTextAlignment.center)
 end
 
 function Game:debugCompletePuzzle()
-   for y = 0, #imgmatrix do
-      for x = 0, #imgmatrix[y] do
-         matrix[y][x] = imgmatrix[y][x]
-      end
-   end
+  for i = 1, #puzzle.imgmatrices do
+    local thisMatrix = matrices[i]
+    local thisImgMatrix = puzzle.imgmatrices[i]
+     for y = 0, #thisImgMatrix do
+        for x = 0, #thisImgMatrix[y] do
+           thisMatrix[y][x] = thisImgMatrix[y][x]
+        end
+     end
+  end
 end
 
 function Game:checkCrank()
@@ -481,28 +556,10 @@ function Game:checkCrank()
   zoom = crankPos
 
    local row = math.floor((imageIndex-1) / puzzle.dimensionWidth)
-  local column = math.floor((imageIndex-1) % puzzle.dimensionWidth)
-
+   local column = math.floor((imageIndex-1) % puzzle.dimensionWidth)
+  
    targetDrawOffsetX = -1 * (column) * puzzle.pieceWidth*spacing
    targetDrawOffsetY = -1 * (row) * puzzle.pieceHeight*spacing
-
-
-  local drawOffsetX, drawOffsetY = gfx.getDrawOffset()
-  drawOffsetX = playdate.math.lerp(drawOffsetX, targetDrawOffsetX, 0.5)
-  drawOffsetY = playdate.math.lerp(drawOffsetY, targetDrawOffsetY, 0.5)
-  -- if math.abs(targetDrawOffsetX - drawOffsetX) <= 0.12 * (targetDrawOffsetX - drawOffsetX) then 
-  --     drawOffsetX = targetDrawOffsetX
-  -- else 
-  --     drawOffsetX = drawOffsetX + (targetDrawOffsetX - drawOffsetX) * 0.1
-  -- end
-  -- 
-  -- if math.abs(targetDrawOffsetY - drawOffsetY) <= 0.12 * (targetDrawOffsetY - drawOffsetY) then 
-  --       drawOffsetY = targetDrawOffsetY
-  --   else 
-  --       drawOffsetY = drawOffsetY + (targetDrawOffsetY - drawOffsetY) * 0.1
-  --   end
-    
-   gfx.setDrawOffset(drawOffsetX,drawOffsetY)
 
   
    if self:isOnRightHandSide() then 
@@ -510,13 +567,24 @@ function Game:checkCrank()
    else 
       offsetX = playdate.math.lerp(kLeftHandOffsetX, kZoomOutOffsetX, 1.0 - zoom)
    end 
-   offsetY = playdate.math.lerp(kDefaultOffsetY, kZoomOutOffsetY, 1.0 - zoom)
+   
+   if self:isOnLowerSide() then 
+      offsetY = playdate.math.lerp(kDownOffsetY, kZoomOutOffsetY, 1.0 - zoom)
+   else 
+      offsetY = playdate.math.lerp(kUpOffsetY, kZoomOutOffsetY, 1.0 - zoom)
+   end 
    spacing = playdate.math.lerp(kDefaultSpacing, kZoomOutSpacing, 1.0 -zoom)
 end
 
-function Game:updateZoomOut()
+function updateDrawOffset()   
+    local drawOffsetX, drawOffsetY = gfx.getDrawOffset()
+    drawOffsetX = playdate.math.lerp(drawOffsetX, targetDrawOffsetX, 0.5)
+    drawOffsetY = playdate.math.lerp(drawOffsetY, targetDrawOffsetY, 0.5)
+    
+   gfx.setDrawOffset(drawOffsetX,drawOffsetY)
 
-end
+end 
+
 
 function Game:updateBoardCursor()
    local thisImageIndex = imageIndex
@@ -582,19 +650,37 @@ function Game:update()
             self:drawGrid(i)
          end
 
+         for i = 1, #matrices do 
+            self:drawPlayerImage(i)
+         end
+
+
          if zoom >= 1.0 then
             self:updateCursor()
             self:drawCursor()
          else
             self:updateBoardCursor()
             self:drawBoardCursor()
-			   self:updateZoomOut()
-		   end
+    		 end
 
          self:drawTime()
       else -- puzzle complete
-         offsetX = playdate.math.lerp(offsetX, (screenWidth - spacing*#puzzle.colData[imageIndex])/2.0, math.min(1.0,(playdate.getCurrentTimeMilliseconds() - puzzleFinishTimestamp)/1000.0))
-         offsetY = playdate.math.lerp(offsetY,  (screenHeight - spacing*#puzzle.rowData[imageIndex])/2.0, math.min(1.0, (playdate.getCurrentTimeMilliseconds() - puzzleFinishTimestamp)/1000.0))
+         offsetX = playdate.math.lerp(offsetX, (screenWidth - (spacing*puzzle.totalWidth))/2.0, math.min(1.0,(playdate.getCurrentTimeMilliseconds() - puzzleFinishTimestamp)/1000.0))
+         offsetY = playdate.math.lerp(offsetY,  (screenHeight - 20 - (spacing*puzzle.totalHeight))/2.0, math.min(1.0, (playdate.getCurrentTimeMilliseconds() - puzzleFinishTimestamp)/1000.0))
+         
+         local heightRatio = math.floor((screenHeight - 20)/puzzle.totalHeight)
+         local widthRatio = math.floor(screenWidth/puzzle.totalWidth)
+         if widthRatio < heightRatio then 
+            fitSpacing = math.min(kDefaultSpacing, widthRatio)
+         else 
+            fitSpacing = math.min(kDefaultSpacing, heightRatio)
+        end
+         spacing = playdate.math.lerp(spacing, fitSpacing, math.min(1.0, (playdate.getCurrentTimeMilliseconds() - puzzleFinishTimestamp)/1000.0))
+         targetDrawOffsetX = 0.0
+         targetDrawOffsetY = 0.0
+         for i = 1, #matrices do 
+             self:drawPlayerImage(i)
+          end
 
          self:drawPuzzleComplete()
 
@@ -603,9 +689,8 @@ function Game:update()
          end
       end
 
-      for i = 1, #matrices do 
-         self:drawPlayerImage(i)
-      end
+      updateDrawOffset()
+
  	end
 end
 
