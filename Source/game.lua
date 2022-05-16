@@ -61,16 +61,6 @@ local targetDrawOffsetY = 0.0
 local completedTextHeight = 220.0
 
 local initialized = false
-local gridFont <const> = gfx.font.new('assets/Picross-Small')
-gridFont:setTracking(0)
-gridFont:setLeading(4)
-
-local gridFontNoKearning <const> = gfx.font.new('assets/Picross-Small-no-kearning')
-gridFontNoKearning:setTracking(2)
-
-local blockyFont <const> = gfx.font.new('assets/blocky')
-blockyFont:setTracking(1)
-
 
 function Game:init()
  	Game.super.init(self)

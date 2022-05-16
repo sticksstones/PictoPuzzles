@@ -3,6 +3,7 @@ import 'level_select'
 import 'game'
 import 'save_funcs'
 
+local gfx = playdate.graphics
 local osMenu = playdate.getSystemMenu()
 local initialized = false
 menu = nil 
@@ -17,6 +18,16 @@ noiseSynth = playdate.sound.synth.new(playdate.sound.kWaveNoise)
 
 local kGameStateMainMenu, kGameStateLevelSelect, kGameStatePlaying, kGameStatePaused = 0, 1, 2,3
 local gameState = kGameStateMainMenu
+
+gridFont = gfx.font.new('assets/fonts/Picross-Small')
+gridFont:setTracking(0)
+gridFont:setLeading(4)
+
+gridFontNoKearning = gfx.font.new('assets/fonts/Picross-Small-no-kearning')
+gridFontNoKearning:setTracking(2)
+
+blockyFont = gfx.font.new('assets/fonts/blocky')
+blockyFont:setTracking(1)
 
 loadSave()
 

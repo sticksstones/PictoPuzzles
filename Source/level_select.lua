@@ -9,9 +9,6 @@ local gfx = playdate.graphics
 
 local selectedGrid = 0
 
-local gridFont = gfx.font.new('assets/blocky')
-gridFont:setTracking(1)
-
 local gridview = playdate.ui.gridview.new(90, 60)
 local active = false
 
@@ -46,7 +43,7 @@ function LevelSelect:start()
 end 
 
 function LevelSelect:update() 
-	gfx.setFont(gridFont)
+	gfx.setFont(blockyFont)
 	gfx.clear()	
 	gfx.setDitherPattern(0.0,gfx.image.kDitherTypeVerticalLine)             
 	gridview:drawInRect(20, 20, 180, 200)
