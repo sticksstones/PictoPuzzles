@@ -22,83 +22,173 @@ function Puzzle:init(puzzleData)
 	self.imgmatrices = nil
 	self:loadPuzzle(self.puzzleData)
 end
+-- 
+-- function Puzzle:loadImage(img)
+--   local imgmatrix = table.create(img.height,0)  
+--   local thisRowData = table.create(img.height,0)
+--   
+--    -- get row data
+--    for y= 0, img.height-1
+--    do
+-- 	   imgmatrix[y] = table.create(img.width,0)
+-- 	   local rowIndex = y+1
+-- 	   local rowCount = 0
+-- 	   thisRowData[rowIndex] = table.create(img.width,0)
+-- 	   for x= 0, img.width-1 do
+-- 		   
+-- 		   local sample = img:sample(x,y)
+-- 		   
+-- 		   if sample == gfx.kColorBlack then
+-- 			   imgmatrix[y][x] = 1
+-- 			   rowCount+= 1  
+-- 		   else
+-- 			   imgmatrix[y][x] = 0
+-- 			   if rowCount > 0 then 
+-- 				   table.insert(thisRowData[rowIndex],rowCount)
+-- 				   rowCount = 0    
+-- 			   end 
+-- 		   end
+-- 	   end
+--    
+-- 	   if rowCount > 0 then 
+-- 		   table.insert(thisRowData[rowIndex],rowCount)
+-- 		   rowCount = 0    
+-- 	   end 
+-- 	   
+-- 	   if #thisRowData[rowIndex] == 0 then 
+-- 		   table.insert(thisRowData[rowIndex],0)
+-- 	   end 
+--    end
+--    
+--    local thisColData = table.create(img.width,0)
+-- 
+--    -- get column data
+--    for x= 0, img.width-1
+--    do
+-- 	   local colIndex = x+1
+-- 	   local colCount = 0
+-- 	   thisColData[colIndex] = table.create(img.height,0)
+-- 	   for y= 0, img.height-1
+-- 	   do
+-- 		   local sample = img:sample(x,y)
+-- 		   
+-- 		   if sample == gfx.kColorBlack then
+-- 			   colCount+= 1  
+-- 		   else
+-- 			   if colCount > 0 then 
+-- 				   table.insert(thisColData[colIndex],colCount)
+-- 				   colCount = 0    
+-- 			   end 
+-- 		   end
+-- 	   end
+--    
+-- 	   if colCount > 0 then 
+-- 		   table.insert(thisColData[colIndex],colCount)
+-- 		   colCount = 0    
+-- 	   end 
+-- 	   
+-- 	   
+-- 	   if #thisColData[colIndex] == 0 then 
+-- 		   table.insert(thisColData[colIndex],0)
+-- 	   end 
+--    end
+--    
+--    self.pieceWidth = #thisColData
+--    self.pieceHeight = #thisRowData
+--    table.insert(self.rowData, thisRowData)
+--    table.insert(self.colData, thisColData)
+--    table.insert(self.imgmatrices, imgmatrix)
+-- end 
 
 function Puzzle:loadImage(img)
-  
   local imgmatrix = table.create(img.height,0)  
-  local thisRowData = table.create(img.height,0)
   
    -- get row data
-   for y= 0, img.height-1
-   do
+   for y= 0, img.height-1 do
 	   imgmatrix[y] = table.create(img.width,0)
-	   local rowIndex = y+1
-	   local rowCount = 0
-	   thisRowData[rowIndex] = table.create(img.width,0)
-	   for x= 0, img.width-1 do
-		   
+	   for x= 0, img.width-1 do		
 		   local sample = img:sample(x,y)
-		   
 		   if sample == gfx.kColorBlack then
 			   imgmatrix[y][x] = 1
-			   rowCount+= 1  
 		   else
 			   imgmatrix[y][x] = 0
-			   if rowCount > 0 then 
-				   table.insert(thisRowData[rowIndex],rowCount)
-				   rowCount = 0    
-			   end 
 		   end
 	   end
+	end 
    
-	   if rowCount > 0 then 
-		   table.insert(thisRowData[rowIndex],rowCount)
-		   rowCount = 0    
-	   end 
-	   
-	   if #thisRowData[rowIndex] == 0 then 
-		   table.insert(thisRowData[rowIndex],0)
-	   end 
-   end
-   
-   local thisColData = table.create(img.width,0)
-
-   -- get column data
-   for x= 0, img.width-1
-   do
-	   local colIndex = x+1
-	   local colCount = 0
-	   thisColData[colIndex] = table.create(img.height,0)
-	   for y= 0, img.height-1
-	   do
-		   local sample = img:sample(x,y)
-		   
-		   if sample == gfx.kColorBlack then
-			   colCount+= 1  
-		   else
-			   if colCount > 0 then 
-				   table.insert(thisColData[colIndex],colCount)
-				   colCount = 0    
-			   end 
-		   end
-	   end
-   
-	   if colCount > 0 then 
-		   table.insert(thisColData[colIndex],colCount)
-		   colCount = 0    
-	   end 
-	   
-	   
-	   if #thisColData[colIndex] == 0 then 
-		   table.insert(thisColData[colIndex],0)
-	   end 
-   end
-   
-   self.pieceWidth = #thisColData
-   self.pieceHeight = #thisRowData
-   table.insert(self.rowData, thisRowData)
-   table.insert(self.colData, thisColData)
+   self.pieceWidth = #imgmatrix[1]+1
+   self.pieceHeight = #imgmatrix+1
    table.insert(self.imgmatrices, imgmatrix)
+end 
+
+function Puzzle:generateHeaders()
+  for i = 1, #self.imgmatrices do 
+  	local imgmatrix = self.imgmatrices[i]  
+  	local width = #imgmatrix[1]
+  	local height = #imgmatrix
+
+  	local thisRowData = table.create(height,0)  
+   	-- get row data
+   	for y= 0, height
+   	do
+	   	local rowIndex = y+1
+	   	local rowCount = 0
+	   	thisRowData[rowIndex] = table.create(width,0)
+	   	for x= 0, width do		   	
+		   	if imgmatrix[y][x] == 1 then
+			   	rowCount+= 1  
+		   	else
+			   	if rowCount > 0 then 
+				   	table.insert(thisRowData[rowIndex],rowCount)
+				   	rowCount = 0    
+			   	end 
+		   	end
+	   	end
+   	
+	   	if rowCount > 0 then 
+		   	table.insert(thisRowData[rowIndex],rowCount)
+		   	rowCount = 0    
+	   	end 
+	   	
+	   	if #thisRowData[rowIndex] == 0 then 
+		   	table.insert(thisRowData[rowIndex],0)
+	   	end 
+   	end
+   	
+   	local thisColData = table.create(width,0)
+	
+   	-- get column data
+   	for x= 0, width
+   	do
+	   	local colIndex = x+1
+	   	local colCount = 0
+	   	thisColData[colIndex] = table.create(height,0)
+	   	for y= 0, height
+	   	do		  		   
+		   	if imgmatrix[y][x] == 1 then
+			   	colCount+= 1  
+		   	else
+			   	if colCount > 0 then 
+				   	table.insert(thisColData[colIndex],colCount)
+				   	colCount = 0    
+			   	end 
+		   	end
+	   	end
+   	
+	   	if colCount > 0 then 
+		   	table.insert(thisColData[colIndex],colCount)
+		   	colCount = 0    
+	   	end 
+	   	
+	   	
+	   	if #thisColData[colIndex] == 0 then 
+		   	table.insert(thisColData[colIndex],0)
+	   	end 
+   	end
+   	
+   	table.insert(self.rowData, thisRowData)
+   	table.insert(self.colData, thisColData)
+  end
 end 
 
 function Puzzle:loadPuzzle(puzzleData)
@@ -113,7 +203,6 @@ function Puzzle:loadPuzzle(puzzleData)
 	self.dimensionHeight = self.puzzleData['override-height'] ~= nil and self.puzzleData['override-height'] or math.sqrt(#self.puzzleData['images'])
 	self.totalWidth = math.floor(self.dimensionWidth * self.pieceWidth)
 	self.totalHeight = math.floor(self.dimensionHeight * self.pieceHeight)
-
 end
 
 function Puzzle:getPixelSizeForWidth(width)

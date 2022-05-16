@@ -30,7 +30,12 @@
 						"override-width":2,
 						"override-height":1,
 						"images":["o.png","o.png"]
-				 }
+				 },
+				 {
+						 "id": 5,
+						 "name":"Test",
+						 "images":["ostrange.png"]
+				  }
 			 ]
 		},
 		{ 

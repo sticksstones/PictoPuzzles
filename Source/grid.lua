@@ -64,6 +64,7 @@ function Grid:loadPuzzle(puzzleSelected)
 	 puzzleComplete = false
 	 initialized = false
 	 puzzle = puzzleSelected
+	 puzzle:generateHeaders()
 
 	 self.matrices = table.create(#puzzle.imgmatrices,0)
 
