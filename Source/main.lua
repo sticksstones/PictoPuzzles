@@ -24,7 +24,7 @@ menu = MainMenu()
 game = Game()
 levelSelect = LevelSelect()
 
-
+playdate.display.setRefreshRate(0)
 
 function playdate.update()
    playdate.timer.updateTimers()

@@ -51,6 +51,11 @@
 					"id": 102,
 					"name":"Flower 2",
 					"images":["flower2.png"]
+				},
+				{
+					"id": 103,
+					"name":"Dandelion",
+					"images":[ "dandelionLU.png","dandelionRU.png","dandelionLD.png","dandelionRD.png"]			
 				}
 			]
 		},
@@ -88,6 +93,11 @@
 					"id": 302,
 					"name":"Cat 3",
 					"images":["cat3.png"]
+				},
+				{
+					"id": 303,
+					"name":"Jellyfish",
+					"images":[ "jellyfishLU.png","jellyfishRU.png","jellyfishLD.png","jellyfishRD.png"]
 				}				
 			]
 		}			 

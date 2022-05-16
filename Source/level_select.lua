@@ -34,7 +34,7 @@ function LevelSelect:init()
 	gridview:setNumberOfColumns(3)	
 	gridview:setSectionHeaderHeight(14)
 	gridview:setContentInset(1, 4, 1, 4)
-	gridview:setCellPadding(4, 8, 10, 20)
+	gridview:setCellPadding(4, 8, 10, 4)
 	gridview.changeRowOnColumnWrap = false
 	
 	active = true
@@ -67,7 +67,7 @@ function LevelSelect:update()
 	-- draw info pane
 	
 	local section, row, column = gridview:getSelection()
-	puzzleData = levelData['puzzles']['categories'][section]['puzzles'][(row-1)*column + column]
+	puzzleData = levelData['puzzles']['categories'][section]['puzzles'][(row-1)*gridview:getNumberOfColumns() + column]
 	
 	if puzzleData then 
 		
@@ -86,7 +86,7 @@ function LevelSelect:update()
 		
 			gfx.drawTextAligned(string.upper(puzzleData['name']), infox + width/2.0, 155.0, kTextAlignment.center)
 	
-			gfx.drawTextAligned(getClearTimeString(puzzleData['id']), infox + width/2.0, 165.0, kTextAlignment.center)
+			gfx.drawTextAligned("CLEARED: " .. getClearTimeString(puzzleData['id']), infox + width/2.0, 165.0, kTextAlignment.center)
 	
 		else 
 			pixelsize = 12
