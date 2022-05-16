@@ -105,3 +105,9 @@ function playdate.gameWillResume()
    -- osMenu:removeAllMenuItems()
 end
 
+function notifyGridChanged() 
+  if gameState == kGameStatePlaying then 
+    game:checkWin()
+  end 
+end
+
