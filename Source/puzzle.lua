@@ -22,83 +22,6 @@ function Puzzle:init(puzzleData)
 	self.imgmatrices = nil
 	self:loadPuzzle(self.puzzleData)
 end
--- 
--- function Puzzle:loadImage(img)
---   local imgmatrix = table.create(img.height,0)  
---   local thisRowData = table.create(img.height,0)
---   
---    -- get row data
---    for y= 0, img.height-1
---    do
--- 	   imgmatrix[y] = table.create(img.width,0)
--- 	   local rowIndex = y+1
--- 	   local rowCount = 0
--- 	   thisRowData[rowIndex] = table.create(img.width,0)
--- 	   for x= 0, img.width-1 do
--- 		   
--- 		   local sample = img:sample(x,y)
--- 		   
--- 		   if sample == gfx.kColorBlack then
--- 			   imgmatrix[y][x] = 1
--- 			   rowCount+= 1  
--- 		   else
--- 			   imgmatrix[y][x] = 0
--- 			   if rowCount > 0 then 
--- 				   table.insert(thisRowData[rowIndex],rowCount)
--- 				   rowCount = 0    
--- 			   end 
--- 		   end
--- 	   end
---    
--- 	   if rowCount > 0 then 
--- 		   table.insert(thisRowData[rowIndex],rowCount)
--- 		   rowCount = 0    
--- 	   end 
--- 	   
--- 	   if #thisRowData[rowIndex] == 0 then 
--- 		   table.insert(thisRowData[rowIndex],0)
--- 	   end 
---    end
---    
---    local thisColData = table.create(img.width,0)
--- 
---    -- get column data
---    for x= 0, img.width-1
---    do
--- 	   local colIndex = x+1
--- 	   local colCount = 0
--- 	   thisColData[colIndex] = table.create(img.height,0)
--- 	   for y= 0, img.height-1
--- 	   do
--- 		   local sample = img:sample(x,y)
--- 		   
--- 		   if sample == gfx.kColorBlack then
--- 			   colCount+= 1  
--- 		   else
--- 			   if colCount > 0 then 
--- 				   table.insert(thisColData[colIndex],colCount)
--- 				   colCount = 0    
--- 			   end 
--- 		   end
--- 	   end
---    
--- 	   if colCount > 0 then 
--- 		   table.insert(thisColData[colIndex],colCount)
--- 		   colCount = 0    
--- 	   end 
--- 	   
--- 	   
--- 	   if #thisColData[colIndex] == 0 then 
--- 		   table.insert(thisColData[colIndex],0)
--- 	   end 
---    end
---    
---    self.pieceWidth = #thisColData
---    self.pieceHeight = #thisRowData
---    table.insert(self.rowData, thisRowData)
---    table.insert(self.colData, thisColData)
---    table.insert(self.imgmatrices, imgmatrix)
--- end 
 
 function Puzzle:loadImage(img)
   local imgmatrix = table.create(img.height,0)  
@@ -122,6 +45,11 @@ function Puzzle:loadImage(img)
 end 
 
 function Puzzle:generateHeaders()
+	count = #self.colData
+	for i=0, count do self.colData[i]=nil end
+	count = #self.rowData
+	for i=0, count do self.rowData[i]=nil end
+
   for i = 1, #self.imgmatrices do 
   	local imgmatrix = self.imgmatrices[i]  
   	local width = #imgmatrix[1]
@@ -231,5 +159,40 @@ function Puzzle:drawImage(posx, posy, width)
 				end 	
 			end 
 		end 		
+	end 
+end
+
+function Puzzle:mirrorMatrixToImage(matrices)
+	for i=1, #matrices do 
+		local matrix = matrices[i]
+		local imgmatrix = self.imgmatrices[i]
+		for y = 0, #matrix do 
+			for x = 0, #matrix[y] do 
+				imgmatrix[y][x] = matrix[y][x]
+			end 
+		end 
+	end 
+	
+	self:generateHeaders()
+end
+
+function Puzzle:writeMatricesToImages()
+	
+	for i=1, #self.imgmatrices do 
+		local imgmatrix = self.imgmatrices[i]
+		local img = gfx.image.new('assets/puzzles/images/' .. self.puzzleData['images'][i])
+		gfx.lockFocus(img)
+		for y=0, #imgmatrix do 
+			for x=0, #imgmatrix[y] do 
+				if imgmatrix[y][x] == 1 then 
+					gfx.setColor(gfx.kColorBlack)
+				else
+			   		gfx.setColor(gfx.kColorWhite) 
+				end 
+				gfx.fillRect(x,y,1,1)
+			end
+		end 
+		gfx.unlockFocus()
+		playdate.datastore.writeImage(img, 'assets/puzzles/images/' .. self.puzzleData['images'][i])
 	end 
 end

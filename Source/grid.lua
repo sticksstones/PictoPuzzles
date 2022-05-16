@@ -25,10 +25,10 @@ local cursorLocX = 0
 local cursorLocY = 0
 
 local kDefaultSpacing <const> = 16
-local kLeftHandOffsetX <const> = 128
-local kRightHandOffsetX <const> = 64
+local kLeftHandOffsetX <const> = 150
+local kRightHandOffsetX <const> = 8
 local kUpOffsetY <const> = 72
-local kDownOffsetY <const> = 0
+local kDownOffsetY <const> = 8
 
 local kZoomOutSpacing <const> = 8
 local kZoomOutOffsetX <const> = 64
@@ -133,7 +133,7 @@ function Grid:drawGrid(overrideImageIndex)
 		
 	  -- draw grid lines
 	  if rowNum >= 1 then
-		 if rowNum % 5 == 0 or zoom < 1.0 then
+		 if rowNum % 5 == 0 and thisImageIndex == imageIndex or zoom < 1.0  then
 			gfx.setDitherPattern(0.0,gfx.image.kDitherTypeVerticalLine)
 		 elseif thisImageIndex == imageIndex then 
 			gfx.setDitherPattern(0.5,gfx.image.kDitherTypeVerticalLine)
@@ -211,7 +211,7 @@ function Grid:drawGrid(overrideImageIndex)
 
 	  -- draw grid lines
 	  if colNum >= 1 then
-		 if colNum % 5 == 0 or zoom < 1.0 then
+		 if colNum % 5 == 0 and thisImageIndex == imageIndex or zoom < 1.0 then
 			gfx.setDitherPattern(0.0,gfx.image.kDitherTypeHorizontalLine)
 		 elseif thisImageIndex == imageIndex then 
 			gfx.setDitherPattern(0.5,gfx.image.kDitherTypeHorizontalLine)
@@ -253,20 +253,20 @@ function Grid:drawGrid(overrideImageIndex)
 		   if self:isOnLowerSide() then 
 			  gfx.fillRect(adjustedOffsetX + colNum * spacing, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing, spacing, 999)
 			  gfx.setImageDrawMode(playdate.graphics.kDrawModeFillWhite)
-			   gfx.drawTextAligned(drawStr, adjustedOffsetX + colNum * spacing + horizExtraOffset, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing - 5, kTextAlignment.centered)
+			   gfx.drawTextAligned(drawStr, adjustedOffsetX + colNum * spacing + horizExtraOffset, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing - 9, kTextAlignment.centered)
 			  gfx.setImageDrawMode(playdate.graphics.kDrawModeCopy)
 		   else 
 			  gfx.fillRect(adjustedOffsetX + colNum * spacing, 0, spacing, adjustedOffsetY)
 			  gfx.setImageDrawMode(playdate.graphics.kDrawModeFillWhite)
-			  gfx.drawTextAligned(drawStr, adjustedOffsetX + colNum * spacing + horizExtraOffset, 10 + adjustedOffsetY - spacing*maxColVals, kTextAlignment.centered)
+			  gfx.drawTextAligned(drawStr, adjustedOffsetX + colNum * spacing + horizExtraOffset, 12 + adjustedOffsetY - spacing*maxColVals, kTextAlignment.centered)
 			  gfx.setImageDrawMode(playdate.graphics.kDrawModeCopy)   
 		  end 
 
 		else
 		  if self:isOnLowerSide() then 
-			   gfx.drawTextAligned(drawStr, adjustedOffsetX + colNum * spacing + horizExtraOffset, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing - 5, kTextAlignment.centered)
+			   gfx.drawTextAligned(drawStr, adjustedOffsetX + colNum * spacing + horizExtraOffset, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing - 9, kTextAlignment.centered)
 		  else 
-			gfx.drawTextAligned(drawStr, adjustedOffsetX + colNum * spacing + horizExtraOffset, 10 + adjustedOffsetY - spacing*maxColVals, kTextAlignment.centered)
+			gfx.drawTextAligned(drawStr, adjustedOffsetX + colNum * spacing + horizExtraOffset, 12 + adjustedOffsetY - spacing*maxColVals, kTextAlignment.centered)
 
 		  end 
 				end
@@ -571,7 +571,7 @@ function Grid:updatePuzzleComplete()
 
 	gfx.setFont(blockyFont)
 	gfx.setDitherPattern(0.0,gfx.image.kDitherTypeVerticalLine)
-	gfx.drawTextAligned("COMPLETED IN " .. getClearTimeString(puzzleData['id']), 0.5*screenWidth, screenHeight - (screenHeight-spacing*puzzle.totalHeight)/2.0, kTextAlignment.center)
+	gfx.drawTextAligned("COMPLETED IN " .. getClearTimeString(puzzle.puzzleData['id']), 0.5*screenWidth, screenHeight - (screenHeight-spacing*puzzle.totalHeight)/2.0, kTextAlignment.center)
 
 	updateDrawOffset()
 end

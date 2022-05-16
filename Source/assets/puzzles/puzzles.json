@@ -10,32 +10,37 @@
 				 {
 					 "id": 1,
 					 "name":"Test",
-					 "images":[ "o.png" ]
+					 "images":[ "o" ]
 				 },
 				 {
 					  "id": 2,
 					  "name":"Test",
-					  "images":["owide.png"]
+					  "images":["owide"]
 				 },
 				 {
 					   "id": 3,
 					   "name":"Test",
 					   "override-width":1,
 					   "override-height":2,
-					   "images":["owide.png","owide.png"]
+					   "images":["owide","owide"]
 				 },
 				 {
 						"id": 4,
 						"name":"Test",
 						"override-width":2,
 						"override-height":1,
-						"images":["o.png","o.png"]
+						"images":["o","o"]
 				 },
 				 {
 						 "id": 5,
 						 "name":"Test",
-						 "images":["ostrange.png"]
-				  }
+						 "images":["ostrange"]
+				 },
+				 {
+						  "id": 6,
+						  "name":"Creation",
+						  "images":["creation1","creation2","creation3","creation4"]
+				 }
 			 ]
 		},
 		{ 
@@ -45,22 +50,22 @@
 				{
 					"id": 100,
 					"name":"Mushroom",
-					"images":[ "mushroomLU.png","mushroomRU.png","mushroomLD.png","mushroomRD.png"]			
+					"images":[ "mushroomLU","mushroomRU","mushroomLD","mushroomRD"]			
 				},
 				{
 					"id": 101,
 					"name":"Flower 1",
-					"images":["flower.png"]
+					"images":["flower"]
 				},
 				{
 					"id": 102,
 					"name":"Flower 2",
-					"images":["flower2.png"]
+					"images":["flower2"]
 				},
 				{
 					"id": 103,
 					"name":"Dandelion",
-					"images":[ "dandelionLU.png","dandelionRU.png","dandelionLD.png","dandelionRD.png"]			
+					"images":[ "dandelionLU","dandelionRU","dandelionLD","dandelionRD"]			
 				}
 			]
 		},
@@ -71,12 +76,12 @@
 				{
 					"id": 200,
 					"name":"Face 1",
-					"images":["face.png"]
+					"images":["face"]
 				},
 				{
 					"id": 201,
 					"name":"Face 2",
-					"images":["face2.png"]
+					"images":["face2"]
 				}
 			]
 		},
@@ -87,22 +92,22 @@
 				{
 					"id": 300,
 					"name":"Cat",
-					"images":["cat.png"]
+					"images":["cat"]
 				},
 				{
 					"id": 301,
 					"name":"Cat 2",
-					"images":["cat2.png"]
+					"images":["cat2"]
 				},
 				{
 					"id": 302,
 					"name":"Cat 3",
-					"images":["cat3.png"]
+					"images":["cat3"]
 				},
 				{
 					"id": 303,
 					"name":"Jellyfish",
-					"images":[ "jellyfishLU.png","jellyfishRU.png","jellyfishLD.png","jellyfishRD.png"]
+					"images":[ "jellyfishLU","jellyfishRU","jellyfishLD","jellyfishRD"]
 				}				
 			]
 		}			 

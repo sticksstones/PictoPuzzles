@@ -77,18 +77,22 @@ end
 function goLevelEditor() 
    setState(kGameStateLevelEditor)
    levelEditor:start()
+   local menuItem, error = osMenu:addMenuItem("Save Puzzle", function() savePuzzle() end)
 end 
 
 function goLoadLevel(puzzle)
    setState(kGameStatePlaying)
    game:loadPuzzle(puzzle)
    local menuItem, error = osMenu:addMenuItem("[DEBUG] Finish", function() debugCompletePuzzle() end)
-   local menuItem2, error2 = osMenu:addMenuItem("Leave Puzzle", function() exitPuzzle() end)
-   
+   local menuItem2, error2 = osMenu:addMenuItem("Leave Puzzle", function() exitPuzzle() end)   
 end 
 
 function exitPuzzle() 
    goLevelSelect()   
+end 
+
+function savePuzzle() 
+  levelEditor:savePuzzle()
 end 
 
 function debugCompletePuzzle()
@@ -108,6 +112,8 @@ end
 function notifyGridChanged() 
   if gameState == kGameStatePlaying then 
     game:checkWin()
+  elseif gameState == kGameStateLevelEditor then 
+    levelEditor:gridChanged()
   end 
 end
 
