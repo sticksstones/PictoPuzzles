@@ -45,8 +45,10 @@ end
 function LevelSelect:update() 
 	gfx.setFont(blockyFont)
 	gfx.clear()	
-	gfx.setDitherPattern(0.0,gfx.image.kDitherTypeVerticalLine)             
-	gridview:drawInRect(20, 20, 180, 200)
+	gfx.setDitherPattern(0.0,gfx.image.kDitherTypeVerticalLine) 
+	-- if gridview.needsDisplay == true then            
+		gridview:drawInRect(20, 20, 180, 200)
+	-- end
 	gfx.setDitherPattern(0.5,gfx.image.kDitherTypeDiagonalLine)             
 	gfx.setLineWidth(0)
 	-- gfx.drawLine(20,20,150,20)

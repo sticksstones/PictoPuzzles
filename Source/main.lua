@@ -1,5 +1,6 @@
 import 'main_menu'
 import 'level_select'
+import 'level_editor'
 import 'game'
 import 'save_funcs'
 
@@ -16,7 +17,7 @@ noiseSynth = playdate.sound.synth.new(playdate.sound.kWaveNoise)
 
 -- synth = playdate.sound.synth.new(playdate.sound.kWavePOVosim)
 
-local kGameStateMainMenu, kGameStateLevelSelect, kGameStatePlaying, kGameStatePaused = 0, 1, 2,3
+local kGameStateMainMenu, kGameStateLevelSelect, kGameStateLevelEditor, kGameStatePlaying, kGameStatePaused = 0, 1, 2, 3, 4
 local gameState = kGameStateMainMenu
 
 gridFont = gfx.font.new('assets/fonts/Picross-Small')
@@ -34,6 +35,7 @@ loadSave()
 menu = MainMenu()   
 game = Game()
 levelSelect = LevelSelect()
+levelEditor = LevelEditor()
 
 playdate.display.setRefreshRate(0)
 
@@ -44,6 +46,8 @@ function playdate.update()
       menu:update()   
    elseif gameState == kGameStateLevelSelect then 
       levelSelect:update()
+    elseif gameState == kGameStateLevelEditor then 
+      levelEditor:update()
    elseif gameState == kGameStatePlaying then 
       game:update()
    end	
@@ -68,6 +72,11 @@ function goLevelSelect(resetState)
    if resetState then 
       levelSelect:start()
    end 
+end 
+
+function goLevelEditor() 
+   setState(kGameStateLevelEditor)
+   levelEditor:start()
 end 
 
 function goLoadLevel(puzzle)
