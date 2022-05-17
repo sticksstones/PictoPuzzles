@@ -19,7 +19,7 @@ local dirPressRepeatTimestamp = -1.0
 local dirPressRepeatTime <const> = 100
 local dirPressTimeTillRepeat <const> = 350
 local setContinue = 0
-local zoomLevel = 1.0
+local zoom = 1.0
 
 local cursorLocX = 0
 local cursorLocY = 0
@@ -341,7 +341,7 @@ function Grid:drawPlayerImage(overrideImageIndex)
 	local matrixCompleted = true
 
 	local playerImage = playerImages[thisImageIndex]
-	if playerImage == nil or zoom < 1.0 or puzzleComplete then 
+	if playerImage == nil or puzzleComplete then 
 		playerImage = gfx.image.new(spacing*(#thisMatrix[1]+1), spacing*(#thisMatrix+1), gfx.kColorClear)
 		playerImages[thisImageIndex] = playerImage
 		gfx.lockFocus(playerImage)
@@ -518,8 +518,13 @@ function Grid:checkCrank()
   end 
    
    crankPos = math.max(0.0, math.min(1.0 - (crankRangeUpper - crankPos)/(crankRangeUpper- crankRangeLower),1.0))
-
-  zoom = crankPos
+   
+  if zoom ~= crankPos then 
+  	zoom = crankPos
+    for i=0, #playerImages do 
+		playerImages[i] = nil
+	end 
+  end 
 
    local row = math.floor((imageIndex-1) / puzzle.dimensionWidth)
    local column = math.floor((imageIndex-1) % puzzle.dimensionWidth)
@@ -649,9 +654,8 @@ function Grid:update()
 
 		 for i = 1, #self.matrices do 
 			 self:drawGrid(i)
-		  end
+		 end
 
-	
  		if zoom >= 1.0 then
 			self:updateCursor()
 			self:drawCursor()
