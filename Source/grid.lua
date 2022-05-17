@@ -59,6 +59,8 @@ local initialized = false
 local headerRowImages = {}
 local headerColumnImages = {}
 
+local playerImages = {} 
+
 function Grid:init()
 	 Grid.super.init(self)
 end
@@ -103,6 +105,9 @@ function Grid:loadPuzzle(puzzleSelected)
 	  headerColumnImages[i] = nil
     end 
 
+	for i=0, #playerImages do 
+		playerImages[i] = nil
+	end 
 	initialized = true
 end
 
@@ -135,14 +140,15 @@ function Grid:drawGrid(overrideImageIndex)
 	  gfx.setDitherPattern(0.5,gfx.image.kDitherTypeVerticalLine)
    end 
 
-   gfx.drawLine(adjustedOffsetX, adjustedOffsetY, adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing, adjustedOffsetY)
+   gfx.drawLine(adjustedOffsetX, adjustedOffsetY, adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing - 1, adjustedOffsetY)
 
-   gfx.drawLine(adjustedOffsetX, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing, adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing)
+   gfx.drawLine(adjustedOffsetX, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing - 1, adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing - 1, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing - 1)
 
+   gfx.setColor(gfx.kColorBlack)
+   gfx.setImageDrawMode(playdate.graphics.kDrawModeCopy) 
    -- draw row data
    local rowNum = 0
-   for key,value in pairs(puzzle.rowData[thisImageIndex]) do
-		
+   for key,value in pairs(puzzle.rowData[thisImageIndex]) do	
 	  -- draw grid lines
 	  if rowNum >= 1 then
 		 if rowNum % 5 == 0 and thisImageIndex == imageIndex or zoom < 1.0  then
@@ -222,9 +228,18 @@ function Grid:drawGrid(overrideImageIndex)
 	  gfx.setDitherPattern(0.5,gfx.image.kDitherTypeHorizontalLine)
    end 
 
-   gfx.drawLine(adjustedOffsetX, adjustedOffsetY, adjustedOffsetX, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing)
+   gfx.drawLine(
+   	adjustedOffsetX, 
+   	adjustedOffsetY, 
+   	adjustedOffsetX, 
+   	adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing - 1
+   )
 
-   gfx.drawLine(adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing, adjustedOffsetY, adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing)
+   gfx.drawLine(
+   	adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing - 1, 
+   	adjustedOffsetY, 
+   	adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing - 1, 
+   	adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing - 1)
    end
 
    -- draw col data
@@ -247,7 +262,7 @@ function Grid:drawGrid(overrideImageIndex)
 			adjustedOffsetX + colNum * spacing - 1, 
 			adjustedOffsetY, 
 			adjustedOffsetX + colNum * spacing - 1,
-			adjustedOffsetY  + #puzzle.rowData[thisImageIndex] * spacing
+			adjustedOffsetY  + #puzzle.rowData[thisImageIndex] * spacing - 1
 		 )
 	  end
 
@@ -323,40 +338,39 @@ function Grid:drawPlayerImage(overrideImageIndex)
    local column = math.floor((thisImageIndex-1) % puzzle.dimensionWidth)
    local adjustedOffsetX = offsetX + (column * (puzzle.pieceWidth*spacing))
    local adjustedOffsetY = offsetY + (row * (puzzle.pieceHeight*spacing))
-
 	local matrixCompleted = true
 
-	 for y= 0, #thisMatrix
-	 do
-		  for x= 0, #thisMatrix[y]
-		  do
-				if thisImgMatrix[y][x] == 1 and thisMatrix[y][x] ~= 1
-					 or thisImgMatrix[y][x] == 0 and thisMatrix[y][x] == 1 then
-					 matrixCompleted = false
-				end
-
-		if thisImageIndex == imageIndex or puzzleComplete then 
-				  if thisMatrix[y][x] == 1 then
-					   gfx.setDitherPattern(0.0,gfx.image.kDitherTypeDiagonalLine)
-					   gfx.fillRect(adjustedOffsetX + spacing*x, adjustedOffsetY + spacing*y, spacing-1, spacing-1)
-				  elseif thisMatrix[y][x] == -1 and not puzzleComplete then
-					   gfx.setDitherPattern(0.5,gfx.image.kDitherTypeDiagonalLine)
-					   gfx.fillRect(adjustedOffsetX + spacing*x, adjustedOffsetY + spacing*y, spacing-1, spacing-1)
-				  end
-		else 
-		  if thisMatrix[y][x] == 1 then
-		   gfx.setDitherPattern(0.5,gfx.image.kDitherTypeBayer8x8)
-		   gfx.fillRect(adjustedOffsetX + spacing*x, adjustedOffsetY + spacing*y, spacing-1, spacing-1)
-		elseif thisMatrix[y][x] == -1 and not puzzleComplete then
-		   -- gfx.setDitherPattern(0.75,gfx.image.kDitherTypeBayer2x2)
-		   gfx.setDitherPattern(0.75,gfx.image.kDitherTypeDiagonalLine)
-		   gfx.fillRect(adjustedOffsetX + spacing*x, adjustedOffsetY + spacing*y, spacing-1, spacing-1)
-		end
-
-		end 
-		  end
-	 end
-
+	local playerImage = playerImages[thisImageIndex]
+	if playerImage == nil or zoom < 1.0 or puzzleComplete then 
+		playerImage = gfx.image.new(spacing*(#thisMatrix[1]+1), spacing*(#thisMatrix+1), gfx.kColorClear)
+		playerImages[thisImageIndex] = playerImage
+		gfx.lockFocus(playerImage)
+	 	for y= 0, #thisMatrix do
+		  	for x= 0, #thisMatrix[y] do
+				if thisImageIndex == imageIndex or puzzleComplete then 
+			  		if thisMatrix[y][x] == 1 then
+				   		gfx.setDitherPattern(0.0,gfx.image.kDitherTypeDiagonalLine)
+				   		gfx.fillRect(spacing*x, spacing*y, spacing-1, spacing-1)
+			  		elseif thisMatrix[y][x] == -1 and not puzzleComplete then
+				   		gfx.setDitherPattern(0.5,gfx.image.kDitherTypeDiagonalLine)
+				   		gfx.fillRect(spacing*x, spacing*y, spacing-1, spacing-1)
+			  		end
+				else 
+		  			if thisMatrix[y][x] == 1 then
+		   				gfx.setDitherPattern(0.5,gfx.image.kDitherTypeBayer8x8)
+		   				gfx.fillRect(spacing*x, spacing*y, spacing-1, spacing-1)
+					elseif thisMatrix[y][x] == -1 and not puzzleComplete then
+		   				gfx.setDitherPattern(0.75,gfx.image.kDitherTypeDiagonalLine)
+		   				gfx.fillRect(spacing*x, spacing*y, spacing-1, spacing-1)
+					end	
+				end 
+		  	end
+	 	end
+		 
+		gfx.unlockFocus()
+	end 
+	
+	playerImage:draw(adjustedOffsetX, adjustedOffsetY)
 	 gfx.setDitherPattern(0.0,gfx.image.kDitherTypeDiagonalLine)
 end
 
@@ -477,6 +491,7 @@ function Grid:updateCursor()
 
 	 if (playdate.buttonIsPressed(playdate.kButtonA) or playdate.buttonIsPressed(playdate.kButtonB)) and newCellTarget then
 		 thisMatrix[cursorLocY][cursorLocX] = setVal
+		 playerImages[imageIndex] = nil
 		 notifyGridChanged()
 		 if setVal == 1 then
 			  synth:playNote(60+setContinue*20, 1, 0.033)
@@ -627,13 +642,15 @@ function Grid:update()
    if initialized and playdate.getCurrentTimeMilliseconds() - initTimestamp > 100 then
 	  	gfx.clear()
  		self:checkCrank()		 
- 		for i = 1, #self.matrices do 
-			self:drawGrid(i)
- 		end
 	
  		for i = 1, #self.matrices do 
 			self:drawPlayerImage(i)
  		end
+
+		 for i = 1, #self.matrices do 
+			 self:drawGrid(i)
+		  end
+
 	
  		if zoom >= 1.0 then
 			self:updateCursor()
