@@ -56,6 +56,9 @@ local targetDrawOffsetY = 0.0
 
 local initialized = false
 
+local headerRowImages = {}
+local headerColumnImages = {}
+
 function Grid:init()
 	 Grid.super.init(self)
 end
@@ -91,6 +94,15 @@ function Grid:loadPuzzle(puzzleSelected)
 
     imageIndex = 1
 	initTimestamp = playdate.getCurrentTimeMilliseconds()
+
+    for i=0, #headerRowImages do 
+	  headerRowImages[i] = nil
+  	end 
+
+  	for i=0, #headerColumnImages do 
+	  headerColumnImages[i] = nil
+    end 
+
 	initialized = true
 end
 
@@ -151,44 +163,56 @@ function Grid:drawGrid(overrideImageIndex)
 
 	  -- draw grid labels
 	  if zoom >= 1.0 and thisImageIndex == imageIndex then
-		 local drawStr = ""
-		 
-		 for key2,value2 in pairs(value) do
-			drawStr = drawStr .. " " .. value2
-		 end
 
-		 if cursorLocY == rowNum then
+		gfx.setColor(gfx.kColorBlack)
+	  
+	    if cursorLocY == rowNum then 
+	  		if self:isOnRightHandSide() then 
+			 	gfx.fillRect(adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing, adjustedOffsetY + rowNum * spacing, 999, spacing)
+			else 
+			   gfx.fillRect(0, adjustedOffsetY + rowNum * spacing, adjustedOffsetX, spacing)
+			end 
+		end
+
+		local headerImage = headerRowImages[rowNum]
+ 	    if headerImage == nil then 
+		 	local drawStr = ""
+		 	
+		 	for key2,value2 in pairs(value) do
+				drawStr = drawStr .. " " .. value2
+		 	end
+			local textWidth, textHeight = gfx.getTextSize(drawStr)
+			headerImage = gfx.image.new(textWidth, textHeight,playdate.graphics.kColorClear)
+			headerRowImages[rowNum] = headerImage
+			gfx.lockFocus(headerImage)
 			gfx.setDitherPattern(0.0, gfx.image.kDitherTypeVerticalLine)
 			gfx.setColor(gfx.kColorBlack)
-
+ 		    gfx.setImageDrawMode(playdate.graphics.kDrawModeCopy) 
 			if self:isOnRightHandSide() then 
-			   gfx.fillRect(adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing, adjustedOffsetY + rowNum * spacing, 999, spacing)
-			   
-			   gfx.setImageDrawMode(playdate.graphics.kDrawModeFillWhite)
-			   
-			   gfx.drawTextAligned(drawStr, adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing, adjustedOffsetY + rowNum * spacing + 2, kTextAlignment.left)
-			   gfx.setImageDrawMode(playdate.graphics.kDrawModeCopy)
-
+				gfx.drawTextAligned(drawStr, 0, 0, kTextAlignment.left)	
 			else 
-			   gfx.setColor(gfx.kColorBlack)
-			   gfx.fillRect(0, adjustedOffsetY + rowNum * spacing, adjustedOffsetX, spacing)
-			   
-			   gfx.setImageDrawMode(playdate.graphics.kDrawModeFillWhite)
-			   
-			   gfx.drawTextAligned(drawStr, adjustedOffsetX - 4, adjustedOffsetY + rowNum * spacing + 2, kTextAlignment.right)
-			   gfx.setImageDrawMode(playdate.graphics.kDrawModeCopy)
-		 
-			end
-		 else
-			if self:isOnRightHandSide() then 
-			   gfx.drawTextAligned(drawStr, adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing, adjustedOffsetY + rowNum * spacing + 2, kTextAlignment.left)
-			else 
-			   gfx.drawTextAligned(drawStr, adjustedOffsetX - 4, adjustedOffsetY + rowNum * spacing + 2, kTextAlignment.right)
-			end
-		 end
-	  end
+				gfx.drawTextAligned(drawStr, textWidth - 3, 0, kTextAlignment.right)
+		 	end
+			gfx.unlockFocus()
+		end 
 
-
+		if cursorLocY == rowNum then
+		  if self:isOnRightHandSide() then 
+				 gfx.setImageDrawMode(playdate.graphics.kDrawModeFillWhite)				
+				 headerImage:draw(adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing, adjustedOffsetY + rowNum * spacing + 2)	 
+				 gfx.setImageDrawMode(playdate.graphics.kDrawModeCopy) 
+		  else 
+				 gfx.setImageDrawMode(playdate.graphics.kDrawModeFillWhite)			 
+			     headerImage:draw(adjustedOffsetX - 4 - headerImage.width, adjustedOffsetY + rowNum * spacing + 2)	 
+				 gfx.setImageDrawMode(playdate.graphics.kDrawModeCopy)	   
+		  end
+	   else
+		  if self:isOnRightHandSide() then 
+		  	headerImage:draw(adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing, adjustedOffsetY + rowNum * spacing + 2)
+		  else 
+			  headerImage:draw(adjustedOffsetX - 4 - headerImage.width, adjustedOffsetY + rowNum  * spacing + 2)
+		  end
+	   end
 	  rowNum += 1
    end
 
@@ -201,7 +225,7 @@ function Grid:drawGrid(overrideImageIndex)
    gfx.drawLine(adjustedOffsetX, adjustedOffsetY, adjustedOffsetX, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing)
 
    gfx.drawLine(adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing, adjustedOffsetY, adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing)
-
+   end
 
    -- draw col data
    local colNum = 0
@@ -229,50 +253,65 @@ function Grid:drawGrid(overrideImageIndex)
 
 	  -- draw grid labels
 	  if zoom >= 1.0 and thisImageIndex == imageIndex then
-		 local drawStr = ""
+		 gfx.setColor(gfx.kColorBlack)
+	  	 gfx.setDitherPattern(0.0, gfx.image.kDitherTypeVerticalLine)						   	
+		 if cursorLocX == colNum then
+		   if self:isOnLowerSide() then 
+			gfx.fillRect(adjustedOffsetX + colNum * spacing, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing, spacing, 999)	
+		   else
+			gfx.fillRect(adjustedOffsetX + colNum * spacing, 0, spacing, adjustedOffsetY)
+		   end 
+		end 
 		 
-		 local horizExtraOffset = 2
-		 
-		 if #value < maxColVals and not self:isOnLowerSide() then
-			for i = 0, 4 - #value do               
-			   drawStr = drawStr .. "\n"
-			end
-		 end
-		 
-		 for key2,value2 in pairs(value) do
-			if value2 > 9 then 
-			  horizExtraOffset = 0
-			end
-			drawStr = drawStr .. "\n" .. value2
-		 end
+		local headerImage = headerColumnImages[colNum]
+		if headerImage == nil then 		
+		 	local drawStr = ""
+		 	
+		 	local horizExtraOffset = 2
+		 	
+		 	if #value < maxColVals and not self:isOnLowerSide() then
+				for i = 0, 4 - #value do               
+			   	drawStr = drawStr .. "\n"
+				end
+		 	end
+		 	
+		 	for key2,value2 in pairs(value) do
+				if value2 > 9 then 
+			  	horizExtraOffset = 0
+				end
+				drawStr = drawStr .. "\n" .. value2
+		 	end
 
+			local textWidth, textHeight = gfx.getTextSize(drawStr)
+			headerImage = gfx.image.new(textWidth+2, textHeight,playdate.graphics.kColorClear)
+			headerColumnImages[colNum] = headerImage
+			gfx.lockFocus(headerImage)
+			gfx.drawTextAligned(drawStr, horizExtraOffset, 0, kTextAlignment.centered)
+			gfx.unlockFocus()
+		end
 
 		if cursorLocX == colNum then
 			 gfx.setDitherPattern(0.0, gfx.image.kDitherTypeVerticalLine)
 			 gfx.setColor(gfx.kColorBlack)
 		   if self:isOnLowerSide() then 
-			  gfx.fillRect(adjustedOffsetX + colNum * spacing, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing, spacing, 999)
 			  gfx.setImageDrawMode(playdate.graphics.kDrawModeFillWhite)
-			   gfx.drawTextAligned(drawStr, adjustedOffsetX + colNum * spacing + horizExtraOffset, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing - 9, kTextAlignment.centered)
+			   headerImage:draw(adjustedOffsetX + colNum * spacing, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing - 8)
 			  gfx.setImageDrawMode(playdate.graphics.kDrawModeCopy)
 		   else 
-			  gfx.fillRect(adjustedOffsetX + colNum * spacing, 0, spacing, adjustedOffsetY)
 			  gfx.setImageDrawMode(playdate.graphics.kDrawModeFillWhite)
-			  gfx.drawTextAligned(drawStr, adjustedOffsetX + colNum * spacing + horizExtraOffset, 12 + adjustedOffsetY - spacing*maxColVals, kTextAlignment.centered)
+			  headerImage:draw(adjustedOffsetX + colNum * spacing, 12 + adjustedOffsetY - spacing*maxColVals)
 			  gfx.setImageDrawMode(playdate.graphics.kDrawModeCopy)   
 		  end 
-
+		
 		else
-		  if self:isOnLowerSide() then 
-			   gfx.drawTextAligned(drawStr, adjustedOffsetX + colNum * spacing + horizExtraOffset, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing - 9, kTextAlignment.centered)
-		  else 
-			gfx.drawTextAligned(drawStr, adjustedOffsetX + colNum * spacing + horizExtraOffset, 12 + adjustedOffsetY - spacing*maxColVals, kTextAlignment.centered)
-
-		  end 
-				end
+			  if self:isOnLowerSide() then 
+				   headerImage:draw(adjustedOffsetX + colNum * spacing, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing - 8)
+			  else 
+				headerImage:draw(adjustedOffsetX + colNum * spacing, 12 + adjustedOffsetY - spacing*maxColVals)		
+			  end 
 		end
-
-		 colNum += 1
+	  end 
+	colNum += 1
 	 end
 end
 
@@ -531,6 +570,14 @@ function Grid:updateBoardCursor()
    if newImageIndex ~= imageIndex then 
 	  imageIndex = newImageIndex
 	  imageIndexChangedTimestamp = playdate.getCurrentTimeMilliseconds()
+	  for i=0, #headerRowImages do 
+	  	headerRowImages[i] = nil
+	  end 
+
+	  for i=0, #headerColumnImages do 
+	 		headerColumnImages[i] = nil
+	   end 
+
    end
 end 
 
