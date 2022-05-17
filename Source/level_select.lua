@@ -14,6 +14,9 @@ local active = false
 
 local levelData = json.decodeFile(playdate.file.open('assets/puzzles/puzzles.json'))
 
+local questionMarkCellImg = nil
+local infoPaneCellImg = nil
+
 cachedPuzzles = {}
 
 class('LevelSelect').extends()
@@ -63,6 +66,7 @@ function LevelSelect:update()
 	gfx.drawRect(infox,-1,width,240)
 	
 	
+
 	-- draw info pane
 	
 	local section, row, column = gridview:getSelection()
@@ -88,8 +92,11 @@ function LevelSelect:update()
 			gfx.drawTextAligned("CLEARED: " .. getClearTimeString(puzzleData['id']), infox + width/2.0, 165.0, kTextAlignment.center)
 	
 		else 
-			pixelsize = 12
-			drawBlockText("?", infox + (width - 5*pixelsize)/2.0, infoy + (height - 5*pixelsize)/2.0, pixelsize)
+			local pixelsize = 12
+			if infoPaneCellImg == nil then 
+				infoPaneCellImg = getBlockTextImage("?", pixelsize)
+			end
+			infoPaneCellImg:draw(infox + (width - 5*pixelsize)/2.0, infoy + (height - 5*pixelsize)/2.0)
 			
 			gfx.drawTextAligned("? ? ?", infox + width/2.0, 155.0, kTextAlignment.center)
 		end 
@@ -197,10 +204,15 @@ function gridview:drawCell(section, row, column, selected, x, y, width, height)
 		if isPuzzleCleared(puzzle.puzzleData['id']) then 
 			gfx.setDitherPattern(0.0,gfx.image.kDitherTypeVerticalLine)
 			puzzle:drawImage(adjustedXPos + margin*width, adjustedYPos + margin*height, constrainedDimension)
-		else 				
-			local blockTextSize = 8
-			local totalSize = 5 * blockTextSize
-			drawBlockText("?", x + (width - totalSize)/2.0, y + (height - totalSize)/2.0, blockTextSize)
+		else 		
+			if questionMarkCellImg == nil then 
+				local blockTextSize = 8
+				questionMarkCellImg = getBlockTextImage("?",blockTextSize)
+			end 
+			questionMarkCellImg:draw(x + (width - questionMarkCellImg.width)/2.0, y + (height - questionMarkCellImg.width)/2.0)
+			-- questionMarkCellImg:draw(x, y)
+			-- local totalSize = 5 * blockTextSize
+			-- drawBlockText("?", x + (width - totalSize)/2.0, y + (height - totalSize)/2.0, blockTextSize)
 		end
 		
 	end

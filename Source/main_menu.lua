@@ -13,6 +13,8 @@ end
 
 local menuOptions = {"SOLVE", "CREATE", "EXPLORE"}
 local listview = playdate.ui.gridview.new(0, 10)
+
+local titleImage = getBlockTextImage("PICTO PUZZLES", 5)
 -- listview.backgroundImage = playdate.graphics.nineSlice.new('scrollbg', 20, 23, 92, 28)
 listview:setNumberOfRows(#menuOptions)
 listview:setCellPadding(0, 0, 8, 5)
@@ -30,9 +32,7 @@ end
 
 function MainMenu:update() 
 	gfx.clear()
-	drawBlockText("PICTO PUZZLES", 25, 70, 5)
-
-	-- drawBlockText("PUZZLES", 25, 150, 4, 0, true)
+	titleImage:draw(25,70)
 	gfx.setFont(blockyFont)
 	
 	listview:drawInRect(0, 110, 160, 210)

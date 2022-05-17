@@ -20,6 +20,7 @@ function Puzzle:init(puzzleData)
 	self.pieceWidth = 0
 	self.puzzleData = puzzleData
 	self.imgmatrices = nil
+    self.cachedImages = {}
 	self:loadPuzzle(self.puzzleData)
 end
 
@@ -141,25 +142,40 @@ end
 function Puzzle:drawImage(posx, posy, width) 
 	gfx.setDitherPattern(0.0,gfx.image.kDitherTypeVerticalLine)
 	
-	local pixelsize = self:getPixelSizeForWidth(width)
+	-- generate a cached image
+	local cachedImage = self.cachedImages[tostring(width)]
+	if cachedImage == nil then 
+		local pixelsize = self:getPixelSizeForWidth(width)
+		cachedImage = gfx.image.new(self.dimensionWidth * self.pieceWidth * pixelsize, self.dimensionHeight * self.pieceHeight * pixelsize, gfx.kColorClear)
+		self.cachedImageSize = width	
+		
+		gfx.lockFocus(cachedImage)
 
-	for i=1, #self.imgmatrices do 
-		local imgmatrix = self.imgmatrices[i]
-		local row = math.floor((i-1) / self.dimensionWidth)
-		local column = math.floor((i-1) % self.dimensionWidth)
+		for i=1, #self.imgmatrices do 
+			local imgmatrix = self.imgmatrices[i]
+			local row = math.floor((i-1) / self.dimensionWidth)
+			local column = math.floor((i-1) % self.dimensionWidth)
+	
+			gfx.setColor(gfx.kColorBlack)
+			for y=0, #imgmatrix do 
+				for x=0, #imgmatrix[y] do
+					if imgmatrix[y][x] == 1 then 
+						gfx.fillRect(
+							(column * (#imgmatrix[y]+1)*pixelsize) + pixelsize*x, 
+							(row * (#imgmatrix+1)*pixelsize) + pixelsize*y, 
+							pixelsize-1, pixelsize-1
+						)					
+					end 	
+				end 
+			end 		
+		end 
+		
+		gfx.unlockFocus()
 
-		for y=0, #imgmatrix do 
-			for x=0, #imgmatrix[y] do
-				if imgmatrix[y][x] == 1 then 
-					gfx.fillRect(
-						posx + (column * (#imgmatrix[y]+1)*pixelsize) + pixelsize*x, 
-						posy + (row * (#imgmatrix+1)*pixelsize) + pixelsize*y, 
-						pixelsize-1, pixelsize-1
-					)					
-				end 	
-			end 
-		end 		
+		self.cachedImages[tostring(width)] = cachedImage
 	end 
+	
+	cachedImage:draw(posx,posy)
 end
 
 function Puzzle:mirrorMatrixToImage(matrices)

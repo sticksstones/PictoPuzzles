@@ -52,6 +52,8 @@ function playdate.update()
       game:update()
    end	
 
+   playdate.drawFPS(0,0)
+
 end
 
 function setState(newState)
