@@ -10,7 +10,7 @@ local initialized = false
 menu = nil 
 
 -- beep boop
-synth = playdate.sound.synth.new(playdate.sound.kWaveTriangle)
+synth = playdate.sound.synth.new(playdate.sound.kWavePOVosim)
 
 -- crackle
 noiseSynth = playdate.sound.synth.new(playdate.sound.kWaveNoise)

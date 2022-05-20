@@ -18,7 +18,6 @@ local dirPressTimestamp = -1.0
 local dirPressRepeatTimestamp = -1.0
 local dirPressRepeatTime <const> = 100
 local dirPressTimeTillRepeat <const> = 350
-local setContinue = 0
 local zoom = 1.0
 
 local cursorLocX = 0
@@ -61,6 +60,11 @@ local headerColumnImages = {}
 
 local playerImages = {} 
 
+local notePitch = 10
+
+local gridSpaceAnimateTime = 125
+local animateTillTimeStamp = 0
+
 function Grid:init()
 	 Grid.super.init(self)
 end
@@ -72,16 +76,21 @@ function Grid:loadPuzzle(puzzleSelected)
 	 puzzle:generateHeaders()
 
 	 self.matrices = table.create(#puzzle.imgmatrices,0)
-
+	 self.matricesData = table.create(#puzzle.imgmatrices,0)
 	 for i=1, #puzzle.imgmatrices do
-		 local thisMatrix = table.create(puzzle.pieceHeight)
-		 for y = 0, puzzle.pieceHeight-1 do
+	 	 local thisMatrix = table.create(puzzle.pieceHeight)
+  		 local thisMatrixData = table.create(#thisMatrix)
+ 		 for y = 0, puzzle.pieceHeight-1 do
 			  thisMatrix[y] = table.create(puzzle.pieceWidth, 0)
-			  for x = 0, puzzle.pieceWidth-1 do
+			  thisMatrixData[y] = table.create(#thisMatrix[y])
+				  
+  			  for x = 0, puzzle.pieceWidth-1 do
 					thisMatrix[y][x] = 0
+					thisMatrixData[y][x] = {} 
 			  end
 		 end
 		 table.insert(self.matrices, thisMatrix)
+		 table.insert(self.matricesData, thisMatrixData)
 	 end
 
 	 matrix = self.matrices[imageIndex]
@@ -333,6 +342,7 @@ end
 function Grid:drawPlayerImage(overrideImageIndex)
    local thisImageIndex = overrideImageIndex and overrideImageIndex or imageIndex
    local thisMatrix = self.matrices[thisImageIndex]
+   local thisMatrixData = self.matricesData[thisImageIndex]
    local thisImgMatrix = puzzle.imgmatrices[thisImageIndex]
    local row = math.floor((thisImageIndex-1) / puzzle.dimensionWidth)
    local column = math.floor((thisImageIndex-1) % puzzle.dimensionWidth)
@@ -341,19 +351,28 @@ function Grid:drawPlayerImage(overrideImageIndex)
 	local matrixCompleted = true
 
 	local playerImage = playerImages[thisImageIndex]
-	if playerImage == nil or puzzleComplete then 
+	if playerImage == nil or puzzleComplete or (playdate.getCurrentTimeMilliseconds() <= animateTillTimeStamp and thisImageIndex == imageIndex)  then 
 		playerImage = gfx.image.new(spacing*(#thisMatrix[1]+1), spacing*(#thisMatrix+1), gfx.kColorClear)
 		playerImages[thisImageIndex] = playerImage
 		gfx.lockFocus(playerImage)
 	 	for y= 0, #thisMatrix do
 		  	for x= 0, #thisMatrix[y] do
+	  			t = 1.0
+			  	if thisMatrixData[y][x]["setTime"] ~= nil then 
+				  	t = math.min(1.0, (playdate.getCurrentTimeMilliseconds() - thisMatrixData[y][x]["setTime"])/gridSpaceAnimateTime)
+			  	end 
+
 				if thisImageIndex == imageIndex or puzzleComplete then 
 			  		if thisMatrix[y][x] == 1 then
 				   		gfx.setDitherPattern(0.0,gfx.image.kDitherTypeDiagonalLine)
-				   		gfx.fillRect(spacing*x, spacing*y, spacing-1, spacing-1)
+				   		gfx.fillRect(spacing*x, spacing*y, t*(spacing-1), t*(spacing-1))
 			  		elseif thisMatrix[y][x] == -1 and not puzzleComplete then
 				   		gfx.setDitherPattern(0.5,gfx.image.kDitherTypeDiagonalLine)
-				   		gfx.fillRect(spacing*x, spacing*y, spacing-1, spacing-1)
+				   		gfx.fillRect(spacing*x + (1.0 - t)*spacing*0.5, spacing*y + (1.0 - t)*spacing*0.5, t*(spacing-1), t*(spacing-1))
+					elseif thisMatrix[y][x] == 0 then 
+					   gfx.setDitherPattern(0.0,gfx.image.kDitherTypeDiagonalLine)
+					   gfx.fillRect(spacing*x + t*spacing*0.5, spacing*y + t*spacing*0.5, (1.0 - t)*(spacing-1), (1.0 - t)*(spacing-1))
+	
 			  		end
 				else 
 		  			if thisMatrix[y][x] == 1 then
@@ -408,7 +427,8 @@ end
 function Grid:updateCursor()
 	 newCellTarget = false
 	 currTime = playdate.getCurrentTimeMilliseconds()
-   local thisMatrix = self.matrices[imageIndex]   
+     local thisMatrix = self.matrices[imageIndex]   
+	 local thisMatrixData = self.matricesData[imageIndex]
 
 	 if not playdate.buttonIsPressed(playdate.kButtonRight)
 		 and not playdate.buttonIsPressed(playdate.kButtonDown)
@@ -418,87 +438,109 @@ function Grid:updateCursor()
 		  lastDirPressed = 0
 	 end
 
-	 if playdate.buttonIsPressed(playdate.kButtonRight) and
-		 currTime > dirPressRepeatTimestamp and lastDirPressed == playdate.kButtonRight or
-		 playdate.buttonJustPressed(playdate.kButtonRight) then
-		  newCellTarget = true
-		  lastDirPressed = playdate.kButtonRight
-		  if playdate.buttonJustPressed(playdate.kButtonRight) then
-				dirPressRepeatTimestamp = currTime + dirPressTimeTillRepeat
-		  else
-				dirPressRepeatTimestamp = currTime + dirPressRepeatTime
-		  end
-		  cursorLocX += 1
-	 elseif playdate.buttonIsPressed(playdate.kButtonLeft) and currTime > dirPressRepeatTimestamp and lastDirPressed == playdate.kButtonLeft or playdate.buttonJustPressed(playdate.kButtonLeft) then
-		  newCellTarget = true
-		  lastDirPressed = playdate.kButtonLeft
-		  if playdate.buttonJustPressed(playdate.kButtonLeft) then
-				dirPressRepeatTimestamp = currTime + dirPressTimeTillRepeat
-		  else
-				dirPressRepeatTimestamp = currTime + dirPressRepeatTime
-		  end
-		  cursorLocX -= 1
-	 elseif playdate.buttonIsPressed(playdate.kButtonUp) and currTime > dirPressRepeatTimestamp and lastDirPressed == playdate.kButtonUp or playdate.buttonJustPressed(playdate.kButtonUp) then
-		  newCellTarget = true
-		  lastDirPressed = playdate.kButtonUp
-		  if playdate.buttonJustPressed(playdate.kButtonUp) then
-				dirPressRepeatTimestamp = currTime + dirPressTimeTillRepeat
-		  else
-				dirPressRepeatTimestamp = currTime + dirPressRepeatTime
-		  end
-		  cursorLocY -= 1
-	 elseif playdate.buttonIsPressed(playdate.kButtonDown) and currTime > dirPressRepeatTimestamp and lastDirPressed == playdate.kButtonDown or playdate.buttonJustPressed(playdate.kButtonDown) then
-		  newCellTarget = true
-		  lastDirPressed = playdate.kButtonDown
-		  if playdate.buttonJustPressed(playdate.kButtonDown) then
-				dirPressRepeatTimestamp = currTime + dirPressTimeTillRepeat
-		  else
-				dirPressRepeatTimestamp = currTime + dirPressRepeatTime
-		  end
-		  cursorLocY += 1
-	 end
+	 
+	--  if playdate.buttonIsPressed(playdate.kButtonB) and playdate.buttonIsPressed(playdate.kButtonA) then 
+	--  	 gfx.drawText(notePitch, 50, 50)
+	-- 	  if playdate.buttonJustPressed(playdate.kButtonUp) then 
+	-- 		  notePitch += 10
+	-- 	 elseif playdate.buttonJustPressed(playdate.kButtonDown) then 
+	-- 		 notePitch -= 10
+	-- 	 end
+	--  else 
+	-- 
+	 	if playdate.buttonIsPressed(playdate.kButtonRight) and
+		 	currTime > dirPressRepeatTimestamp and lastDirPressed == playdate.kButtonRight or
+		 	playdate.buttonJustPressed(playdate.kButtonRight) then
+		  	newCellTarget = true
+		  	lastDirPressed = playdate.kButtonRight
+		  	if playdate.buttonJustPressed(playdate.kButtonRight) then
+					dirPressRepeatTimestamp = currTime + dirPressTimeTillRepeat
+		  	else
+					dirPressRepeatTimestamp = currTime + dirPressRepeatTime
+		  	end
+		  	cursorLocX += 1
+	 	elseif playdate.buttonIsPressed(playdate.kButtonLeft) and currTime > dirPressRepeatTimestamp and lastDirPressed == playdate.kButtonLeft or playdate.buttonJustPressed(playdate.kButtonLeft) then
+		  	newCellTarget = true
+		  	lastDirPressed = playdate.kButtonLeft
+		  	if playdate.buttonJustPressed(playdate.kButtonLeft) then
+					dirPressRepeatTimestamp = currTime + dirPressTimeTillRepeat
+		  	else
+					dirPressRepeatTimestamp = currTime + dirPressRepeatTime
+		  	end
+		  	cursorLocX -= 1
+	 	elseif playdate.buttonIsPressed(playdate.kButtonUp) and currTime > dirPressRepeatTimestamp and lastDirPressed == playdate.kButtonUp or playdate.buttonJustPressed(playdate.kButtonUp) then
+		  	newCellTarget = true
+		  	lastDirPressed = playdate.kButtonUp
+		  	if playdate.buttonJustPressed(playdate.kButtonUp) then
+					dirPressRepeatTimestamp = currTime + dirPressTimeTillRepeat
+		  	else
+					dirPressRepeatTimestamp = currTime + dirPressRepeatTime
+		  	end
+		  	cursorLocY -= 1
+	 	elseif playdate.buttonIsPressed(playdate.kButtonDown) and currTime > dirPressRepeatTimestamp and lastDirPressed == playdate.kButtonDown or playdate.buttonJustPressed(playdate.kButtonDown) then
+		  	newCellTarget = true
+		  	lastDirPressed = playdate.kButtonDown
+		  	if playdate.buttonJustPressed(playdate.kButtonDown) then
+					dirPressRepeatTimestamp = currTime + dirPressTimeTillRepeat
+		  	else
+					dirPressRepeatTimestamp = currTime + dirPressRepeatTime
+		  	end
+		  	cursorLocY += 1
+	 	end
+	
+	 	if cursorLocX >= #puzzle.colData[imageIndex] then
+		  	cursorLocX = 0
+	 	elseif cursorLocX < 0 then
+		  	cursorLocX = #puzzle.colData[imageIndex] - 1
+	 	end
+	
+	 	if cursorLocY >= #puzzle.rowData[imageIndex] then
+		  	cursorLocY = 0
+	 	elseif cursorLocY < 0 then
+		  	cursorLocY = #puzzle.rowData[imageIndex] - 1
+	 	end
+	
+	
+	
+	 	if playdate.buttonJustPressed(playdate.kButtonA) then
+		  	newCellTarget = true
+	
+		  	if thisMatrix[cursorLocY][cursorLocX] ~= 1 then
+					setVal = 1
+		  	else
+					setVal = 0
+		  	end
+	 	elseif playdate.buttonJustPressed(playdate.kButtonB) then
+		  	newCellTarget = true
+	
+		  	if thisMatrix[cursorLocY][cursorLocX] ~= -1 then
+					setVal = -1
+		  	else
+					setVal = 0
+		  	end
+	 	end
+	-- end
 
-	 if cursorLocX >= #puzzle.colData[imageIndex] then
-		  cursorLocX = 0
-	 elseif cursorLocX < 0 then
-		  cursorLocX = #puzzle.colData[imageIndex] - 1
-	 end
-
-	 if cursorLocY >= #puzzle.rowData[imageIndex] then
-		  cursorLocY = 0
-	 elseif cursorLocY < 0 then
-		  cursorLocY = #puzzle.rowData[imageIndex] - 1
-	 end
-
-	 if playdate.buttonJustPressed(playdate.kButtonA) then
-		  newCellTarget = true
-		  setContinue = 0
-
-		  if thisMatrix[cursorLocY][cursorLocX] ~= 1 then
-				setVal = 1
-		  else
-				setVal = 0
-		  end
-	 elseif playdate.buttonJustPressed(playdate.kButtonB) then
-		  newCellTarget = true
-
-		  if thisMatrix[cursorLocY][cursorLocX] ~= -1 then
-				setVal = -1
-		  else
-				setVal = 0
-		  end
-	 end
+	 notePitch = math.max(0, notePitch)
 
 	 if (playdate.buttonIsPressed(playdate.kButtonA) or playdate.buttonIsPressed(playdate.kButtonB)) and newCellTarget then
-		 thisMatrix[cursorLocY][cursorLocX] = setVal
-		 playerImages[imageIndex] = nil
-		 notifyGridChanged()
-		 if setVal == 1 then
-			  synth:playNote(60+setContinue*20, 1, 0.033)
-			  setContinue += 1
-		 elseif setVal == -1 then
-			  noiseSynth:playNote(60, 0.5, 0.016)
-		 end
+	 	 local prevVal = thisMatrix[cursorLocY][cursorLocX]
+ 	     if prevVal ~= setVal then	 
+ 		 	thisMatrix[cursorLocY][cursorLocX] = setVal
+			thisMatrixData[cursorLocY][cursorLocX]["setTime"] = playdate.getCurrentTimeMilliseconds()
+			animateTillTimeStamp = playdate.getCurrentTimeMilliseconds() + gridSpaceAnimateTime + 100
+		 	playerImages[imageIndex] = nil		 	
+		 	notifyGridChanged()
+	
+		 	if setVal == 1 then
+			  	synth:playNote(40, 5, 0.016)
+		 	elseif setVal == -1 then
+			  	noiseSynth:playNote(50, 0.15, 0.016)			  	
+		 	elseif setVal == 0 then 
+				noiseSynth:setDecay(0.05)		 	 	
+				noiseSynth:playNote(10, 0.15, 0.016)
+		 	end 
+		end
 	 end
 end
 
