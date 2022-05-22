@@ -24,7 +24,7 @@ local cursorLocY = 0
 
 local zoom = 1.0
 
-local kDefaultSpacing <const> = 10
+local kDefaultSpacing <const> = 32
 local kLeftHandOffsetX <const> = 150
 local kRightHandOffsetX <const> = 50
 local kUpOffsetY <const> = 80
@@ -34,9 +34,17 @@ local kZoomOutSpacing <const> = 8
 local kZoomOutOffsetX <const> = 64
 local kZoomOutOffsetY <const> = 36
 
+local maxZoom = 2.0
+local maxSpacing = 32
+local minSpacing = 8
+local zoomOutMinSpacing = 2
+
 local spacing = 16
 local offsetX = 128
 local offsetY = 72
+local targetSpacing = 16
+local targetOffsetX = 128
+local targetOffsetY = 72
 
 local screenWidth <const> = playdate.display.getWidth()
 local screenHeight <const> = playdate.display.getHeight()
@@ -65,6 +73,8 @@ local notePitch = 10
 
 local gridSpaceAnimateTime = 125
 local animateTillTimeStamp = 0
+
+local fontSize <const> = 6
 
 function Grid:init()
 	 Grid.super.init(self)
@@ -118,6 +128,11 @@ function Grid:loadPuzzle(puzzleSelected)
 	for i=0, #playerImages do 
 		playerImages[i] = nil
 	end 
+
+	targetSpacing = self:calculateIdealSpacing()
+	minSpacing = 0.5*targetSpacing
+	zoomOutMinSpacing = math.max(6, 0.5*minSpacing)
+	zoom = self:getZoomForSpacing(targetSpacing)
 	initialized = true
 end
 
@@ -215,18 +230,18 @@ function Grid:drawGrid(overrideImageIndex)
 		if cursorLocY == rowNum then
 		  if self:isOnRightHandSide() then 
 				 gfx.setImageDrawMode(playdate.graphics.kDrawModeFillWhite)				
-				 headerImage:draw(adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing - 4, adjustedOffsetY + rowNum * spacing + 2)	 
+				 headerImage:draw(adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing - 4, adjustedOffsetY + rowNum * spacing + (spacing - fontSize)/2.0)	 
 				 gfx.setImageDrawMode(playdate.graphics.kDrawModeCopy) 
 		  else 
 				 gfx.setImageDrawMode(playdate.graphics.kDrawModeFillWhite)			 
-			     headerImage:draw(adjustedOffsetX  - headerImage.width, adjustedOffsetY + rowNum * spacing + 2)	 
+			     headerImage:draw(adjustedOffsetX  - headerImage.width, adjustedOffsetY + rowNum * spacing + (spacing - fontSize)/2.0)	 
 				 gfx.setImageDrawMode(playdate.graphics.kDrawModeCopy)	   
 		  end
 	   else
 		  if self:isOnRightHandSide() then 
-		  	headerImage:draw(adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing - 4, adjustedOffsetY + rowNum * spacing + 2)
+		  	  headerImage:draw(adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing - 4, adjustedOffsetY + rowNum * spacing + (spacing - fontSize)/2.0)
 		  else 
-			  headerImage:draw(adjustedOffsetX - headerImage.width, adjustedOffsetY + rowNum  * spacing + 2)
+			  headerImage:draw(adjustedOffsetX - headerImage.width, adjustedOffsetY + rowNum  * spacing + (spacing - fontSize)/2.0)
 		  end
 	   end
 	  rowNum += 1
@@ -320,19 +335,20 @@ function Grid:drawGrid(overrideImageIndex)
 			 gfx.setColor(gfx.kColorBlack)
 		   if self:isOnLowerSide() then 
 			  gfx.setImageDrawMode(playdate.graphics.kDrawModeFillWhite)
-			   headerImage:draw(adjustedOffsetX + colNum * spacing, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing - 8)
+			   headerImage:draw(adjustedOffsetX + colNum * spacing + (spacing - fontSize*2.0)/2.0, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing - fontSize)
 			  gfx.setImageDrawMode(playdate.graphics.kDrawModeCopy)
 		   else 
 			  gfx.setImageDrawMode(playdate.graphics.kDrawModeFillWhite)
-			  headerImage:draw(adjustedOffsetX + colNum * spacing, -8 + adjustedOffsetY - spacing*maxColVals)
+			  headerImage:draw(adjustedOffsetX + colNum * spacing + (spacing - fontSize*2.0)/2.0, -fontSize - 2 + adjustedOffsetY - ((fontSize+2)*(maxColVals+2)))
+			  -- headerImage:draw(adjustedOffsetX + colNum * spacing + (spacing - fontSize*2.0)/2.0, adjustedOffsetY - (fontSize/2.0*maxColVals))
 			  gfx.setImageDrawMode(playdate.graphics.kDrawModeCopy)   
 		  end 
 		
 		else
 			  if self:isOnLowerSide() then 
-				   headerImage:draw(adjustedOffsetX + colNum * spacing, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing - 8)
+				   headerImage:draw(adjustedOffsetX + colNum * spacing + (spacing - fontSize*2.0)/2.0, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing - fontSize)
 			  else 
-				headerImage:draw(adjustedOffsetX + colNum * spacing, -8 + adjustedOffsetY - spacing*maxColVals)		
+				headerImage:draw(adjustedOffsetX + colNum * spacing + (spacing - fontSize*2.0)/2.0, -fontSize - 2 + adjustedOffsetY - ((fontSize+2)*(maxColVals+2)))		
 			  end 
 		end
 	  end 
@@ -546,57 +562,91 @@ function Grid:updateCursor()
 	 end
 end
 
-function Grid:checkCrank()
-   local crankPos = playdate.getCrankPosition()
-   
-   local crankRangeUpper = 330.0
-   local crankRangeLower = 220.0
-   local backDeadZone = 150.0
+function Grid:getZoomForSpacing(thisSpacing)
+	local delta = thisSpacing - minSpacing
 
-  if crankPos < backDeadZone then 
-	  crankPos = crankRangeUpper
-  elseif crankPos > crankRangeUpper then 
-	 crankPos = crankRangeUpper
-  elseif crankPos < crankRangeLower then 
-	crankPos = crankRangeLower
-  end 
+	if thisSpacing > maxSpacing then 
+		return maxZoom
+	elseif thisSpacing >= minSpacing then 
+		return playdate.math.lerp(1.0, maxZoom, (thisSpacing-minSpacing)/maxSpacing)
+	else 
+		return playdate.math.lerp(0.0, 1.0, (thisSpacing-zoomOutMinSpacing)/minSpacing)
+	end 
+end
+
+function Grid:calculateIdealSpacing() 
+	local blockWidth = puzzle.pieceWidth
+	local totalBlockWidth = math.ceil(blockWidth * 1.5)
+	local blockHeight = puzzle.pieceHeight
+	local totalBlockHeight = math.ceil(blockHeight * 1.5)
+	local maxSpacingWidth = math.floor(screenWidth/totalBlockWidth)
+	local maxSpacingHeight = math.floor(screenHeight/totalBlockHeight)
+	
+	return math.min(maxSpacingWidth, maxSpacingHeight)
+end 
+
+function Grid:checkCrank()
    
-   crankPos = math.max(0.0, math.min(1.0 - (crankRangeUpper - crankPos)/(crankRangeUpper- crankRangeLower),1.0))
+   local crankDelta = playdate.getCrankChange()   
+   crankDelta /= 360.0
    
-  if zoom ~= crankPos then 
-  	zoom = crankPos
+   local newZoom = zoom + crankDelta
+   newZoom = math.max(0.0, math.min(newZoom, maxZoom))
+
+  if zoom ~= newZoom then 
+  	zoom = newZoom
     for i=0, #playerImages do 
 		playerImages[i] = nil
 	end 
   end 
 
+  if zoom >= 1.0 then 
+  	targetSpacing = playdate.math.lerp(minSpacing,maxSpacing,(zoom - 1.0)/(maxZoom - 1.0))	
+  else
+    targetSpacing = playdate.math.lerp(zoomOutMinSpacing, minSpacing, zoom)
+  end 
+
+  if #puzzle.imgmatrices == 1 then 
+  	zoom = math.max(zoom, 1.0)
+  end	 
+
+  -- targetSpacing = math.ceil(targetSpacing)
+  local blockWidth = puzzle.pieceWidth
+  local paddingWidth = math.ceil(puzzle.pieceWidth * 0.5)
+  if self:isOnRightHandSide() then 
+  	targetOffsetX = (screenWidth - blockWidth*targetSpacing)*0.5
+  else 
+  	targetOffsetX = (screenWidth - blockWidth*targetSpacing)*0.5 + paddingWidth*fontSize*0.5
+  end 
+  local blockHeight = puzzle.pieceHeight
+  local paddingHeight = math.ceil(puzzle.pieceHeight * 0.5)
+  if self:isOnLowerSide() then 
+	  targetOffsetY = (screenHeight - blockHeight*targetSpacing)*0.5
+  else 
+  	targetOffsetY = (screenHeight - blockHeight*targetSpacing)*0.5 + paddingHeight*fontSize*0.5
+  end
+
+  offsetX = targetOffsetX
+  offsetY = targetOffsetY
+  spacing = targetSpacing
+  
    local row = math.floor((imageIndex-1) / puzzle.dimensionWidth)
    local column = math.floor((imageIndex-1) % puzzle.dimensionWidth)
   
-   targetDrawOffsetX = -1 * (column) * puzzle.pieceWidth*spacing
-   targetDrawOffsetY = -1 * (row) * puzzle.pieceHeight*spacing
-
-  
-   if self:isOnRightHandSide() then 
-	  offsetX = playdate.math.lerp(kRightHandOffsetX, kZoomOutOffsetX, 1.0 - zoom)
-   else 
-	  offsetX = playdate.math.lerp(kLeftHandOffsetX, kZoomOutOffsetX, 1.0 - zoom)
-   end 
-   
-   if self:isOnLowerSide() then 
-	  offsetY = playdate.math.lerp(kDownOffsetY, kZoomOutOffsetY, 1.0 - zoom)
-   else 
-	  offsetY = playdate.math.lerp(kUpOffsetY, kZoomOutOffsetY, 1.0 - zoom)
-   end 
-   spacing = playdate.math.lerp(kDefaultSpacing, kZoomOutSpacing, 1.0 -zoom)
+   targetDrawOffsetX = math.floor(-1.0 * column * puzzle.pieceWidth*spacing) -- - column * paddingWidth*fontSize
+   targetDrawOffsetY = math.floor(-1.0 * row * puzzle.pieceHeight*spacing)  -- - row * paddingHeight*fontSize
 end
 
 function updateDrawOffset()   
 	local drawOffsetX, drawOffsetY = gfx.getDrawOffset()
+
+	print(drawOffsetX..","..drawOffsetY)
+
 	drawOffsetX = playdate.math.lerp(drawOffsetX, targetDrawOffsetX, 0.5)
 	drawOffsetY = playdate.math.lerp(drawOffsetY, targetDrawOffsetY, 0.5)
 	
-   gfx.setDrawOffset(drawOffsetX,drawOffsetY)
+   -- gfx.setDrawOffset(drawOffsetX,drawOffsetY)
+    gfx.setDrawOffset(targetDrawOffsetX, targetDrawOffsetY)
 end 
 
 
@@ -689,8 +739,9 @@ end
 
 function Grid:update()
    if initialized and playdate.getCurrentTimeMilliseconds() - initTimestamp > 100 then
-	  	gfx.clear()
- 		self:checkCrank()		 
+		gfx.clear()
+		self:checkCrank()		 
+		updateDrawOffset()
 	
  		for i = 1, #self.matrices do 
 			self:drawPlayerImage(i)
@@ -709,7 +760,7 @@ function Grid:update()
 			self:updateBoardCursor()
 			self:drawBoardCursor()
  		end
-  		updateDrawOffset()
+
 	end
 end
 

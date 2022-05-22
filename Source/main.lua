@@ -37,19 +37,19 @@ game = Game()
 levelSelect = LevelSelect()
 levelEditor = LevelEditor()
 
-playdate.display.setRefreshRate(0)
+playdate.display.setRefreshRate(30)
 
 function playdate.update()
    playdate.timer.updateTimers()
          
-   if gameState == kGameStateMainMenu then 
+   if gameState == kGameStatePlaying then 
+      game:update()
+   elseif gameState == kGameStateMainMenu then 
       menu:update()   
    elseif gameState == kGameStateLevelSelect then 
       levelSelect:update()
     elseif gameState == kGameStateLevelEditor then 
       levelEditor:update()
-   elseif gameState == kGameStatePlaying then 
-      game:update()
    end	
 
    playdate.drawFPS(0,0)
