@@ -21,6 +21,7 @@ function Puzzle:init(puzzleData)
 	self.puzzleData = puzzleData
 	self.imgmatrices = nil
     self.cachedImages = {}
+	self.headersNeedRedisplay = false
 	self:loadPuzzle(self.puzzleData)
 end
 
@@ -117,6 +118,7 @@ function Puzzle:generateHeaders()
    	
    	table.insert(self.rowData, thisRowData)
    	table.insert(self.colData, thisColData)
+	self.headersNeedRedisplay = true
   end
 end 
 

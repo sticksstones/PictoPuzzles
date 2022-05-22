@@ -18,15 +18,16 @@ local dirPressTimestamp = -1.0
 local dirPressRepeatTimestamp = -1.0
 local dirPressRepeatTime <const> = 100
 local dirPressTimeTillRepeat <const> = 350
-local zoom = 1.0
 
 local cursorLocX = 0
 local cursorLocY = 0
 
-local kDefaultSpacing <const> = 16
+local zoom = 1.0
+
+local kDefaultSpacing <const> = 10
 local kLeftHandOffsetX <const> = 150
-local kRightHandOffsetX <const> = 8
-local kUpOffsetY <const> = 72
+local kRightHandOffsetX <const> = 50
+local kUpOffsetY <const> = 80
 local kDownOffsetY <const> = 8
 
 local kZoomOutSpacing <const> = 8
@@ -190,7 +191,7 @@ function Grid:drawGrid(overrideImageIndex)
 		end
 
 		local headerImage = headerRowImages[rowNum]
- 	    if headerImage == nil then 
+ 	    if headerImage == nil or puzzle.headersNeedRedisplay == true then 
 		 	local drawStr = ""
 		 	
 		 	for key2,value2 in pairs(value) do
@@ -214,18 +215,18 @@ function Grid:drawGrid(overrideImageIndex)
 		if cursorLocY == rowNum then
 		  if self:isOnRightHandSide() then 
 				 gfx.setImageDrawMode(playdate.graphics.kDrawModeFillWhite)				
-				 headerImage:draw(adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing, adjustedOffsetY + rowNum * spacing + 2)	 
+				 headerImage:draw(adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing - 4, adjustedOffsetY + rowNum * spacing + 2)	 
 				 gfx.setImageDrawMode(playdate.graphics.kDrawModeCopy) 
 		  else 
 				 gfx.setImageDrawMode(playdate.graphics.kDrawModeFillWhite)			 
-			     headerImage:draw(adjustedOffsetX - 4 - headerImage.width, adjustedOffsetY + rowNum * spacing + 2)	 
+			     headerImage:draw(adjustedOffsetX  - headerImage.width, adjustedOffsetY + rowNum * spacing + 2)	 
 				 gfx.setImageDrawMode(playdate.graphics.kDrawModeCopy)	   
 		  end
 	   else
 		  if self:isOnRightHandSide() then 
-		  	headerImage:draw(adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing, adjustedOffsetY + rowNum * spacing + 2)
+		  	headerImage:draw(adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing - 4, adjustedOffsetY + rowNum * spacing + 2)
 		  else 
-			  headerImage:draw(adjustedOffsetX - 4 - headerImage.width, adjustedOffsetY + rowNum  * spacing + 2)
+			  headerImage:draw(adjustedOffsetX - headerImage.width, adjustedOffsetY + rowNum  * spacing + 2)
 		  end
 	   end
 	  rowNum += 1
@@ -253,7 +254,7 @@ function Grid:drawGrid(overrideImageIndex)
 
    -- draw col data
    local colNum = 0
-   local maxColVals = 6
+   local maxColVals = 8
    
    for key,value in pairs(puzzle.colData[thisImageIndex]) do
 
@@ -288,13 +289,13 @@ function Grid:drawGrid(overrideImageIndex)
 		end 
 		 
 		local headerImage = headerColumnImages[colNum]
-		if headerImage == nil then 		
+		if headerImage == nil or puzzle.headersNeedRedisplay == true then 		
 		 	local drawStr = ""
 		 	
 		 	local horizExtraOffset = 2
 		 	
 		 	if #value < maxColVals and not self:isOnLowerSide() then
-				for i = 0, 4 - #value do               
+				for i = 0, (maxColVals - 1) - #value do               
 			   	drawStr = drawStr .. "\n"
 				end
 		 	end
@@ -323,7 +324,7 @@ function Grid:drawGrid(overrideImageIndex)
 			  gfx.setImageDrawMode(playdate.graphics.kDrawModeCopy)
 		   else 
 			  gfx.setImageDrawMode(playdate.graphics.kDrawModeFillWhite)
-			  headerImage:draw(adjustedOffsetX + colNum * spacing, 12 + adjustedOffsetY - spacing*maxColVals)
+			  headerImage:draw(adjustedOffsetX + colNum * spacing, -8 + adjustedOffsetY - spacing*maxColVals)
 			  gfx.setImageDrawMode(playdate.graphics.kDrawModeCopy)   
 		  end 
 		
@@ -331,12 +332,13 @@ function Grid:drawGrid(overrideImageIndex)
 			  if self:isOnLowerSide() then 
 				   headerImage:draw(adjustedOffsetX + colNum * spacing, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing - 8)
 			  else 
-				headerImage:draw(adjustedOffsetX + colNum * spacing, 12 + adjustedOffsetY - spacing*maxColVals)		
+				headerImage:draw(adjustedOffsetX + colNum * spacing, -8 + adjustedOffsetY - spacing*maxColVals)		
 			  end 
 		end
 	  end 
 	colNum += 1
 	 end
+
 end
 
 function Grid:drawPlayerImage(overrideImageIndex)
@@ -697,6 +699,8 @@ function Grid:update()
 		 for i = 1, #self.matrices do 
 			 self:drawGrid(i)
 		 end
+
+		 puzzle.headersNeedRedisplay = false
 
  		if zoom >= 1.0 then
 			self:updateCursor()

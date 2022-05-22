@@ -23,7 +23,7 @@ function LevelEditor:start()
 	self.puzzleData['name'] = "creation"
 	self.puzzleData['images'] = {}
 	for i=1, 4 do 
-		local canvas = playdate.graphics.image.new(15, 10, gfx.kColorWhite)
+		local canvas = playdate.graphics.image.new(25, 15, gfx.kColorWhite)
 		local filename = self.puzzleData['name']..i
 		playdate.datastore.writeImage(canvas, 'assets/puzzles/images/' .. filename)
 		table.insert(self.puzzleData['images'],filename)

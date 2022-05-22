@@ -20,7 +20,7 @@ noiseSynth = playdate.sound.synth.new(playdate.sound.kWaveNoise)
 local kGameStateMainMenu, kGameStateLevelSelect, kGameStateLevelEditor, kGameStatePlaying, kGameStatePaused = 0, 1, 2, 3, 4
 local gameState = kGameStateMainMenu
 
-gridFont = gfx.font.new('assets/fonts/Picross-Small')
+gridFont = gfx.font.new('assets/fonts/Picross-ExtraSmall')
 gridFont:setTracking(0)
 gridFont:setLeading(4)
 
