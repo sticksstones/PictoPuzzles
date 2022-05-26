@@ -69,6 +69,8 @@ local headerColumnImages = {}
 
 local playerImages = {} 
 
+local gridLineImages = {}
+
 local notePitch = 10
 
 local gridSpaceAnimateTime = 125
@@ -129,6 +131,10 @@ function Grid:loadPuzzle(puzzleSelected)
 		playerImages[i] = nil
 	end 
 
+	for i=0, #gridLineImages do 
+		gridLineImages[i] = nil
+	end 
+
 	targetSpacing = self:calculateIdealSpacing()
 	minSpacing = 0.5*targetSpacing
 	zoomOutMinSpacing = math.max(6, 0.5*minSpacing)
@@ -150,6 +156,107 @@ function Grid:isOnLowerSide()
    return (row > 0 and row + 1 == puzzle.dimensionHeight)
 end 
 
+function Grid:drawLineGrid(overrideImageIndex)
+   local thisImageIndex = overrideImageIndex and overrideImageIndex or imageIndex
+   local row = math.floor((thisImageIndex-1) / puzzle.dimensionWidth)
+   local column = math.floor((thisImageIndex-1) % puzzle.dimensionWidth)
+   local adjustedOffsetX = offsetX + (column * (puzzle.pieceWidth*spacing))
+   local adjustedOffsetY = offsetY + (row * (puzzle.pieceHeight*spacing))
+   local lineGridImage = gridLineImages[thisImageIndex]
+
+   if lineGridImage == nil then 
+	   lineGridImage = gfx.image.new(#puzzle.colData[thisImageIndex] * spacing+1, #puzzle.rowData[thisImageIndex] * spacing+1,playdate.graphics.kColorClear)
+	   gridLineImages[thisImageIndex] = lineGridImage
+	   gfx.lockFocus(lineGridImage)
+
+   		if imageIndex == thisImageIndex then 
+		 	gfx.setDitherPattern(0.0,gfx.image.kDitherTypeVerticalLine)
+	  	else 
+		 	gfx.setDitherPattern(0.5,gfx.image.kDitherTypeVerticalLine)
+	  	end 
+
+		-- draw left and right lines		  
+		 gfx.drawLine(
+			 0, 
+			 0, 
+			 0, 
+			 #puzzle.rowData[thisImageIndex] * spacing - 1
+		 )
+		  
+		 gfx.drawLine(
+			 #puzzle.colData[thisImageIndex] * spacing - 1, 
+			 0, 
+			 #puzzle.colData[thisImageIndex] * spacing - 1, 
+			 #puzzle.rowData[thisImageIndex] * spacing - 1
+		)
+
+		-- draw top and bottom line		   
+		  gfx.drawLine(
+		  	0, 
+			0, 
+			#puzzle.colData[thisImageIndex] * spacing - 1, 
+			0
+		  )
+	   
+		  gfx.drawLine(
+		  	0, 
+			#puzzle.rowData[thisImageIndex] * spacing - 1, 
+			#puzzle.colData[thisImageIndex] * spacing - 1, 
+			#puzzle.rowData[thisImageIndex] * spacing - 1
+		  )
+
+
+   	   local rowNum = 0
+		  -- draw row lines
+		for key,value in pairs(puzzle.rowData[thisImageIndex]) do	
+		  if rowNum >= 1 then
+			 if rowNum % 5 == 0 and thisImageIndex == imageIndex or zoom < 1.0  then
+				gfx.setDitherPattern(0.0,gfx.image.kDitherTypeVerticalLine)
+			 elseif thisImageIndex == imageIndex then 
+				gfx.setDitherPattern(0.5,gfx.image.kDitherTypeVerticalLine)
+			 else
+				gfx.setDitherPattern(0.75,gfx.image.kDitherTypeVerticalLine)
+			 end
+		
+			 gfx.drawLine(
+				0, 
+				rowNum * spacing - 1, 
+				#puzzle.colData[thisImageIndex] * spacing - 1 , 
+				rowNum * spacing - 1
+			 )
+		  end
+		  rowNum += 1
+		end
+		  
+		local colNum = 0
+				  
+		  -- draw column lines
+   	   	for key,value in pairs(puzzle.colData[thisImageIndex]) do		  
+			if colNum >= 1 then
+			   if colNum % 5 == 0 and thisImageIndex == imageIndex or zoom < 1.0 then
+				  gfx.setDitherPattern(0.0,gfx.image.kDitherTypeHorizontalLine)
+			   elseif thisImageIndex == imageIndex then 
+				  gfx.setDitherPattern(0.5,gfx.image.kDitherTypeHorizontalLine)
+			   else
+				  gfx.setDitherPattern(0.75,gfx.image.kDitherTypeHorizontalLine)
+			   end
+		  
+			   gfx.drawLine(
+				  colNum * spacing - 1, 
+				  0, 
+				  colNum * spacing - 1,
+				  #puzzle.rowData[thisImageIndex] * spacing - 1
+			   )
+			end
+			colNum += 1
+		end
+
+		gfx.unlockFocus()
+   end 
+
+   lineGridImage:draw(adjustedOffsetX, adjustedOffsetY)
+end 
+
 function Grid:drawGrid(overrideImageIndex)
    local thisImageIndex = overrideImageIndex and overrideImageIndex or imageIndex
    local row = math.floor((thisImageIndex-1) / puzzle.dimensionWidth)
@@ -159,42 +266,15 @@ function Grid:drawGrid(overrideImageIndex)
 
    gfx.setFont(gridFont)
 
-   if imageIndex == thisImageIndex then 
-	  gfx.setDitherPattern(0.0,gfx.image.kDitherTypeVerticalLine)
-   else 
-	  gfx.setDitherPattern(0.5,gfx.image.kDitherTypeVerticalLine)
-   end 
-
-   gfx.drawLine(adjustedOffsetX, adjustedOffsetY, adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing - 1, adjustedOffsetY)
-
-   gfx.drawLine(adjustedOffsetX, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing - 1, adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing - 1, adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing - 1)
+   self:drawLineGrid(overrideImageIndex)
 
    gfx.setColor(gfx.kColorBlack)
    gfx.setImageDrawMode(playdate.graphics.kDrawModeCopy) 
    -- draw row data
    local rowNum = 0
    for key,value in pairs(puzzle.rowData[thisImageIndex]) do	
-	  -- draw grid lines
-	  if rowNum >= 1 then
-		 if rowNum % 5 == 0 and thisImageIndex == imageIndex or zoom < 1.0  then
-			gfx.setDitherPattern(0.0,gfx.image.kDitherTypeVerticalLine)
-		 elseif thisImageIndex == imageIndex then 
-			gfx.setDitherPattern(0.5,gfx.image.kDitherTypeVerticalLine)
-		 else
-			gfx.setDitherPattern(0.75,gfx.image.kDitherTypeVerticalLine)
-		 end
-
-		 gfx.drawLine(
-			adjustedOffsetX, 
-			adjustedOffsetY + rowNum * spacing - 1, 
-			adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing, 
-			adjustedOffsetY + rowNum * spacing - 1
-		 )
-	  end
-
 	  -- draw grid labels
 	  if zoom >= 1.0 and thisImageIndex == imageIndex then
-
 		gfx.setColor(gfx.kColorBlack)
 	  
 	    if cursorLocY == rowNum then 
@@ -205,6 +285,7 @@ function Grid:drawGrid(overrideImageIndex)
 			end 
 		end
 
+		-- generate header image if needed
 		local headerImage = headerRowImages[rowNum]
  	    if headerImage == nil or puzzle.headersNeedRedisplay == true then 
 		 	local drawStr = ""
@@ -227,6 +308,7 @@ function Grid:drawGrid(overrideImageIndex)
 			gfx.unlockFocus()
 		end 
 
+		-- draw header image
 		if cursorLocY == rowNum then
 		  if self:isOnRightHandSide() then 
 				 gfx.setImageDrawMode(playdate.graphics.kDrawModeFillWhite)				
@@ -244,27 +326,8 @@ function Grid:drawGrid(overrideImageIndex)
 			  headerImage:draw(adjustedOffsetX - headerImage.width, adjustedOffsetY + rowNum  * spacing + (spacing - fontSize)/2.0)
 		  end
 	   end
+	  end
 	  rowNum += 1
-   end
-
-   if imageIndex == thisImageIndex then 
-	  gfx.setDitherPattern(0.0,gfx.image.kDitherTypeHorizontalLine)
-   else 
-	  gfx.setDitherPattern(0.5,gfx.image.kDitherTypeHorizontalLine)
-   end 
-
-   gfx.drawLine(
-   	adjustedOffsetX, 
-   	adjustedOffsetY, 
-   	adjustedOffsetX, 
-   	adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing - 1
-   )
-
-   gfx.drawLine(
-   	adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing - 1, 
-   	adjustedOffsetY, 
-   	adjustedOffsetX + #puzzle.colData[thisImageIndex] * spacing - 1, 
-   	adjustedOffsetY + #puzzle.rowData[thisImageIndex] * spacing - 1)
    end
 
    -- draw col data
@@ -272,26 +335,6 @@ function Grid:drawGrid(overrideImageIndex)
    local maxColVals = 8
    
    for key,value in pairs(puzzle.colData[thisImageIndex]) do
-
-	  -- draw grid lines
-	  if colNum >= 1 then
-		 if colNum % 5 == 0 and thisImageIndex == imageIndex or zoom < 1.0 then
-			gfx.setDitherPattern(0.0,gfx.image.kDitherTypeHorizontalLine)
-		 elseif thisImageIndex == imageIndex then 
-			gfx.setDitherPattern(0.5,gfx.image.kDitherTypeHorizontalLine)
-		 else
-			gfx.setDitherPattern(0.75,gfx.image.kDitherTypeHorizontalLine)
-		 end
-
-		 gfx.drawLine(
-			adjustedOffsetX + colNum * spacing - 1, 
-			adjustedOffsetY, 
-			adjustedOffsetX + colNum * spacing - 1,
-			adjustedOffsetY  + #puzzle.rowData[thisImageIndex] * spacing - 1
-		 )
-	  end
-
-	  -- draw grid labels
 	  if zoom >= 1.0 and thisImageIndex == imageIndex then
 		 gfx.setColor(gfx.kColorBlack)
 	  	 gfx.setDitherPattern(0.0, gfx.image.kDitherTypeVerticalLine)						   	
@@ -303,6 +346,7 @@ function Grid:drawGrid(overrideImageIndex)
 		   end 
 		end 
 		 
+	     -- generate header image
 		local headerImage = headerColumnImages[colNum]
 		if headerImage == nil or puzzle.headersNeedRedisplay == true then 		
 		 	local drawStr = ""
@@ -330,6 +374,7 @@ function Grid:drawGrid(overrideImageIndex)
 			gfx.unlockFocus()
 		end
 
+		-- draw header images
 		if cursorLocX == colNum then
 			 gfx.setDitherPattern(0.0, gfx.image.kDitherTypeVerticalLine)
 			 gfx.setColor(gfx.kColorBlack)
@@ -353,7 +398,7 @@ function Grid:drawGrid(overrideImageIndex)
 		end
 	  end 
 	colNum += 1
-	 end
+	end
 
 end
 
@@ -366,9 +411,9 @@ function Grid:drawPlayerImage(overrideImageIndex)
    local column = math.floor((thisImageIndex-1) % puzzle.dimensionWidth)
    local adjustedOffsetX = offsetX + (column * (puzzle.pieceWidth*spacing))
    local adjustedOffsetY = offsetY + (row * (puzzle.pieceHeight*spacing))
-	local matrixCompleted = true
+   local playerImage = playerImages[thisImageIndex]
 
-	local playerImage = playerImages[thisImageIndex]
+   -- generate player image if needed
 	if playerImage == nil or puzzleComplete or (playdate.getCurrentTimeMilliseconds() <= animateTillTimeStamp and thisImageIndex == imageIndex)  then 
 		playerImage = gfx.image.new(spacing*(#thisMatrix[1]+1), spacing*(#thisMatrix+1), gfx.kColorClear)
 		playerImages[thisImageIndex] = playerImage
@@ -408,7 +453,6 @@ function Grid:drawPlayerImage(overrideImageIndex)
 	end 
 	
 	playerImage:draw(adjustedOffsetX, adjustedOffsetY)
-	 gfx.setDitherPattern(0.0,gfx.image.kDitherTypeDiagonalLine)
 end
 
 function Grid:drawCursor()
@@ -588,7 +632,7 @@ end
 function Grid:checkCrank()
    
    local crankDelta = playdate.getCrankChange()   
-   crankDelta /= 360.0
+   crankDelta /= 180.0
    
    local newZoom = zoom + crankDelta
    newZoom = math.max(0.0, math.min(newZoom, maxZoom))
@@ -597,6 +641,10 @@ function Grid:checkCrank()
   	zoom = newZoom
     for i=0, #playerImages do 
 		playerImages[i] = nil
+	end 
+
+	for i=0, #gridLineImages do 
+		gridLineImages[i] = nil
 	end 
   end 
 
@@ -639,8 +687,6 @@ end
 
 function updateDrawOffset()   
 	local drawOffsetX, drawOffsetY = gfx.getDrawOffset()
-
-	print(drawOffsetX..","..drawOffsetY)
 
 	drawOffsetX = playdate.math.lerp(drawOffsetX, targetDrawOffsetX, 0.5)
 	drawOffsetY = playdate.math.lerp(drawOffsetY, targetDrawOffsetY, 0.5)
@@ -739,7 +785,7 @@ end
 
 function Grid:update()
    if initialized and playdate.getCurrentTimeMilliseconds() - initTimestamp > 100 then
-		gfx.clear()
+		-- gfx.clear()
 		self:checkCrank()		 
 		updateDrawOffset()
 	
@@ -763,6 +809,3 @@ function Grid:update()
 
 	end
 end
-
-
-

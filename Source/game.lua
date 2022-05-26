@@ -88,7 +88,7 @@ end
 function Game:update()
    if initialized and playdate.getCurrentTimeMilliseconds() - initTimestamp > 100 then
 
-      -- gfx.clear()
+      gfx.clear()
 
       if not puzzleComplete then
         grid:update()
